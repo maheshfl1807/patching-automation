@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <RootNamespace>ImportService</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>bin\Debug\ImportService.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="LaunchSharp" Version="5.8.2" />
+      <PackageReference Include="LaunchSharp.DependencyContainer.SimpleInjector" Version="5.8.2" />
+      <PackageReference Include="LaunchSharp.DependencyContainer.SimpleInjector.Packaging" Version="5.8.2" />
+      <PackageReference Include="LaunchSharp.Logging.Serilog" Version="5.8.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Common\Common.csproj" />
+    </ItemGroup>
+
+</Project>

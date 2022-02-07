@@ -1,6 +1,6 @@
-# Cloud Server Importer
+# Patching Automation
 
-Application that iterates over cloud accounts and imports their instances into various systems.
+Contains projects for all patching automation microservices.
 
 ## Getting started
 

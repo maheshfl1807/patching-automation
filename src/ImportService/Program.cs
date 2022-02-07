@@ -1,0 +1,50 @@
+﻿namespace ImportService
+{
+    using LaunchSharp;
+    using LaunchSharp.DependencyContainer.SimpleInjector;
+    using LaunchSharp.DependencyContainer.SimpleInjector.Packaging;
+    using LaunchSharp.Logging.Serilog;
+    using Microsoft.Extensions.Logging;
+
+    /// <summary>
+    /// Bootstrap class for the application.
+    /// </summary>
+    internal static class Program
+    {
+        private static readonly Deployment LocalDeployment = new Deployment("local");
+
+        /// <summary>
+        /// Main entrypoint. Bootstraps the application.
+        /// </summary>
+        /// <param name="args">Command line args.</param>
+        /// <returns>An exit code.</returns>
+        public static int Main(string[] args)
+        {
+            return Build(args)
+                .Run(app => app.Run());
+        }
+
+        private static EntryPoint<Application> Build(string[] args)
+        {
+            return EntryPoint.ForRoot<Application>()
+                .WithCommandLineArguments(args)
+
+                .If(DeploymentCondition.Is(LocalDeployment), builder => builder
+                    .WithMinLogLevel(LogLevel.Trace))
+                .Else(builder => builder
+                    .WithMinLogLevel(LogLevel.Information)
+                    .WithStructuredSerilog())
+
+                .WithConfigurationBinding<Settings>()
+
+                .WithErrorReturnCode(1)
+
+                .WithSimpleInjector(container =>
+                {
+                    container.RequirePackage<DependencyPackage>();
+                })
+
+                .Create();
+        }
+    }
+}

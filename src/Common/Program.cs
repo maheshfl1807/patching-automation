@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CloudServerImporter
+namespace Common
 {
     class Program
     {
