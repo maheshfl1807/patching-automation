@@ -47,10 +47,6 @@
                     // TODO: Maybe functionality like "only import AWS accounts" or "import these specific account ids"
                     var consumeResult = consumer.Consume(cancellationToken);
 
-                    // TODO: Figure out why context operations can't be async without killing the app
-                    // TODO: but giving a 0 exit code??
-                    // await using var context = await this.contextFactory.CreateDbContextAsync(cancellationToken);
-
                     foreach (var exporter in _exporters)
                     {
                         var cloudAccounts = await exporter.GetCloudAccounts();

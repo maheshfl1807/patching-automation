@@ -6,6 +6,11 @@
     public class CommonMysqlSettings
     {
         /// <summary>
+        /// The JSON section key to use in appsettings.json
+        /// </summary>
+        public const string Section = "Mysql";
+
+        /// <summary>
         /// The version of MySQL being used. If not specified, it will be inferred from the connection string.
         /// </summary>
         public string ServerVersion { get; set; }

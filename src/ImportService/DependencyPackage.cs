@@ -70,17 +70,6 @@ namespace ImportService
             // Import Service Context
             container.Register<IDbContextFactory<ImportServiceContext>, ImportServiceContextFactory>(
                 Lifestyle.Singleton);
-
-            // container.Register<ImportServiceContext>(
-            //     () =>
-            //     {
-            //         var mysqlSettings = container.GetInstance<ISettings<MysqlSettings>>();
-            //         var connectionString = mysqlSettings.GetRequired(s => s.ConnectionString);
-            //         var optionsBuilder = new DbContextOptionsBuilder<DbContext>();
-            //         optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-            //
-            //         return new ImportServiceContext(optionsBuilder.Options);
-            //     });
         }
     }
 }

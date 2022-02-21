@@ -1,5 +1,6 @@
 ﻿namespace ImportService
 {
+    using Common.Settings;
     using ImportService.Settings;
     using LaunchSharp;
     using LaunchSharp.AccountAccess.AmazonIAM;
@@ -40,7 +41,7 @@
                 .WithConfigurationBinding<RootSettings>()
                 .WithConfigurationBinding<AccountAccessSettings>("AccountAccess")
                 .WithConfigurationBinding<KafkaSettings>("Kafka")
-                .WithConfigurationBinding<MysqlSettings>("Mysql")
+                .WithConfigurationBinding<MysqlSettings>(CommonMysqlSettings.Section)
                 .WithConfigurationBinding<PlatformSettings>("Platform")
 
                 .WithErrorReturnCode(1)

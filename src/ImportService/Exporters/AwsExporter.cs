@@ -36,6 +36,7 @@
 
             var awsProvider = await GetAwsProvider(context);
             return await context.CloudAccount
+                    // TODO: REMOVE TEST ACCOUNT ID
                     .Where(a => a.CloudProviderId == awsProvider.Id && a.CloudProviderAccountId == "061165946885")
                     .ToListAsync();
         }
@@ -58,6 +59,7 @@
                 SessionToken = awsCredentials.SessionToken,
             });
 
+            // TODO: Handle pagination.
             var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync();
             var cloudServers = new List<CloudServer>();
             foreach (var awsReservation in awsDescribeInstancesResponse.Reservations)

@@ -35,23 +35,20 @@
             {
                 try
                 {
-                    // TODO: Figure out why context operations can't be async without killing the app
-                    // TODO: but giving a 0 exit code??
                     Console.WriteLine("Provider consumer waiting for message to consume...");
                     await using var context = await ContextFactory.CreateDbContextAsync(cancellationToken);
 
                     var consumeResult = consumer.Consume(cancellationToken);
                     var platformProvider = JsonConvert.DeserializeObject<Provider>(consumeResult.Message.Value);
-                    var cloudProvider = context.CloudProvider.SingleOrDefault(p => p.Name == platformProvider.Name);
+                    var cloudProvider = await context.CloudProvider.SingleOrDefaultAsync(p => p.Name == platformProvider.Name);
 
                     if (cloudProvider == null)
                     {
                         cloudProvider = ConvertPlatformProviderToCloudProvider(platformProvider);
-                        context.CloudProvider.Add(cloudProvider);
+                        await context.CloudProvider.AddAsync(cloudProvider);
                     }
 
-                    // TODO: Figure out why this can't be async without killing loop.
-                    context.SaveChanges();
+                    await context.SaveChangesAsync();
                     Console.WriteLine(consumeResult.Message.Value);
                 }
                 catch (Exception e)

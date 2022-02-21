@@ -34,8 +34,6 @@
             {
                 try
                 {
-                    // TODO: Figure out why context operations can't be async without killing the app
-                    // TODO: but giving a 0 exit code??
                     Console.WriteLine("Account consumer waiting for message to consume...");
                     await using var context = await ContextFactory.CreateDbContextAsync(cancellationToken);
 
@@ -88,7 +86,6 @@
         {
             return new CloudAccount
             {
-                // TODO
                 CloudProviderAccountId = platformAccount.AccountId,
             };
         }

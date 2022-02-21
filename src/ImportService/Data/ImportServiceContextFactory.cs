@@ -15,7 +15,11 @@
 
         public ImportServiceContext CreateDbContext()
         {
-            return new ImportServiceContext();
+            var connectionString = _mysqlSettings.GetRequired(s => s.ConnectionString);
+            var optionsBuilder = new DbContextOptionsBuilder<DbContext>();
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+
+            return new ImportServiceContext(optionsBuilder.Options);
         }
     }
 }

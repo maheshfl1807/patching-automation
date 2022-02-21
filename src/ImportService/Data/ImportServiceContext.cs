@@ -1,20 +1,37 @@
 ﻿namespace ImportService.Data
 {
+    using System;
     using System.IO;
     using Common.Entities;
+    using Common.Settings;
     using ImportService.Entities;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata;
+    using Microsoft.Extensions.Configuration;
 
     public class ImportServiceContext : DbContext
     {
+        /// <summary>
+        /// Parameterless initialization identifier.
+        /// </summary>
+        public const string ParameterlessInitializationType = "Parameterless";
+
+        /// <summary>
+        /// With options initialization identifier.
+        /// </summary>
+        public const string WithOptionsInitializationType = "WithOptions";
+
+        private readonly string _initializationType;
+
         public ImportServiceContext()
         {
+            _initializationType = ParameterlessInitializationType;
         }
 
         public ImportServiceContext(DbContextOptions dbContextOptions)
-        : base()
+        : base(dbContextOptions)
         {
+            _initializationType = WithOptionsInitializationType;
         }
 
         public DbSet<CloudAccount> CloudAccount { get; set; }
@@ -23,11 +40,19 @@
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // TODO: Move this to settings.
-            var connectionString =
-                "server=localhost; port=33306; database=importservice; user=root; password=dev; Persist Security Info=False; Connect Timeout=300";
-            // var connectionString = this.mysqlSettings.GetRequired(s => s.ConnectionString);
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            if (_initializationType.Equals(ParameterlessInitializationType))
+            {
+                // Yes, this is ugly. It's only necessary to run when applying migrations using the
+                // "dotnet ef database update" command, which uses the parameterless constructor and
+                // doesn't implement the DI container.
+                var connectionString = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", true)
+                    .AddJsonFile("appsettings.local.json", true)
+                    .Build()
+                    .GetSection(CommonMysqlSettings.Section)[nameof(CommonMysqlSettings.ConnectionString)];
+
+                optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,6 +62,7 @@
             ConfigureMetadataProperties<CloudAccount>(modelBuilder);
             ConfigureMetadataProperties<CloudProvider>(modelBuilder);
             ConfigureMetadataProperties<CloudServer>(modelBuilder);
+            ConfigureMetadataProperties<CloudServerTag>(modelBuilder);
         }
 
         private void ConfigureRelationships(ModelBuilder modelBuilder)

@@ -11,12 +11,14 @@
     /// </summary>
     public class InfraGuardImporter : IImporter
     {
+        // TODO: Move to environment variables.
         private static readonly string[] s_validTagKeys = { "Patch Group", "2W_Patch", "2W_Patched" };
         private static readonly string[] s_invalidTagValues = { "Exclude", "Exempt", "Not patch", "None", "False" };
 
         /// <inheritdoc />
         public void Import(IEnumerable<CloudServer> cloudServers)
         {
+            // TODO: If static, make into extension method possibly.
             var orphanedServers = new List<CloudServer>();
             var missingTagServers = new List<CloudServer>();
             var excludedServers = new List<CloudServer>();
