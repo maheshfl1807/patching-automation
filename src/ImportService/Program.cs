@@ -1,6 +1,8 @@
 ﻿namespace ImportService
 {
+    using ImportService.Settings;
     using LaunchSharp;
+    using LaunchSharp.AccountAccess.AmazonIAM;
     using LaunchSharp.DependencyContainer.SimpleInjector;
     using LaunchSharp.DependencyContainer.SimpleInjector.Packaging;
     using LaunchSharp.Logging.Serilog;
@@ -9,7 +11,7 @@
     /// <summary>
     /// Bootstrap class for the application.
     /// </summary>
-    internal static class Program
+    internal class Program
     {
         private static readonly Deployment LocalDeployment = new Deployment("local");
 
@@ -35,7 +37,11 @@
                     .WithMinLogLevel(LogLevel.Information)
                     .WithStructuredSerilog())
 
-                .WithConfigurationBinding<Settings>()
+                .WithConfigurationBinding<RootSettings>()
+                .WithConfigurationBinding<AccountAccessSettings>("AccountAccess")
+                .WithConfigurationBinding<KafkaSettings>("Kafka")
+                .WithConfigurationBinding<MysqlSettings>("Mysql")
+                .WithConfigurationBinding<PlatformSettings>("Platform")
 
                 .WithErrorReturnCode(1)
 
