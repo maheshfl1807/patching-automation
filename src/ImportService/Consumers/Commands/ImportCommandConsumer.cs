@@ -1,39 +1,38 @@
 ﻿namespace ImportService.Consumers.Commands
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Confluent.Kafka;
-    using ImportService.Data;
-    using ImportService.Entities;
     using ImportService.Exporters;
     using ImportService.Importers;
     using ImportService.Settings;
     using LaunchSharp.Settings;
-    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Logging;
 
     public class ImportCommandConsumer : AbstractConsumer<Ignore, string>
     {
+        private readonly ILogger _logger;
         private readonly IEnumerable<IExporter> _exporters;
         private readonly IEnumerable<IImporter> _importers;
 
         public ImportCommandConsumer(
             ISettings<KafkaSettings> kafkaSettings,
-            IDbContextFactory<ImportServiceContext> contextFactory,
+            ILogger logger,
             IEnumerable<IExporter> exporters,
             IEnumerable<IImporter> importers)
-            : base(kafkaSettings, contextFactory)
+            : base(kafkaSettings)
         {
+            _logger = logger;
             _exporters = exporters;
             _importers = importers;
             var groupId = kafkaSettings.GetRequired(s => s.ImportCommandConsumerGroupId);
             SetConfigGroupId(groupId);
         }
 
+        /// <inheritdoc />
         public override async Task Consume(CancellationToken cancellationToken)
         {
             using var consumer = GetConsumer();
@@ -43,6 +42,8 @@
             {
                 try
                 {
+                    _logger.LogInformation("Import command consumer waiting for message to consume...");
+
                     // TODO: Construct a data model for this and use it to control different aspects of importing.
                     // TODO: Maybe functionality like "only import AWS accounts" or "import these specific account ids"
                     var consumeResult = consumer.Consume(cancellationToken);
@@ -62,7 +63,7 @@
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message);
+                    // TODO: Catch error.
                 }
             }
 

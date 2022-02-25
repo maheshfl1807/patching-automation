@@ -1,7 +1,6 @@
 ﻿namespace ImportService.Consumers
 {
     using System;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
@@ -11,16 +10,23 @@
     using ImportService.Settings;
     using LaunchSharp.Settings;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Platform.Model;
 
     public class ProviderConsumer : AbstractConsumer<Ignore, string>
     {
+        private readonly IDbContextFactory<ImportServiceContext> _contextFactory;
+        private readonly ILogger _logger;
+
         public ProviderConsumer(
+            ILogger logger,
             ISettings<KafkaSettings> kafkaSettings,
             IDbContextFactory<ImportServiceContext> contextFactory)
-            : base(kafkaSettings, contextFactory)
+            : base(kafkaSettings)
         {
+            _logger = logger;
+            _contextFactory = contextFactory;
             var groupId = kafkaSettings.GetRequired(s => s.ProviderConsumerGroupId);
             SetConfigGroupId(groupId);
         }
@@ -35,8 +41,8 @@
             {
                 try
                 {
-                    Console.WriteLine("Provider consumer waiting for message to consume...");
-                    await using var context = await ContextFactory.CreateDbContextAsync(cancellationToken);
+                    _logger.LogInformation("Provider consumer waiting for message to consume...");
+                    await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
                     var consumeResult = consumer.Consume(cancellationToken);
                     var platformProvider = JsonConvert.DeserializeObject<Provider>(consumeResult.Message.Value);
@@ -49,11 +55,10 @@
                     }
 
                     await context.SaveChangesAsync();
-                    Console.WriteLine(consumeResult.Message.Value);
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message);
+                    _logger.LogError("{Message}", e.Message);
                 }
             }
 

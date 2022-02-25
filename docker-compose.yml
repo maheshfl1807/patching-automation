@@ -31,6 +31,7 @@ services:
       MYSQL_ROOT_PASSWORD: 'dev'
     command:
       - --max_allowed_packet=1073741824
+      - --wait-timeout=28800
     ports:
       # <Port exposed> : < MySQL Port running inside container>
       - '33306:3306'

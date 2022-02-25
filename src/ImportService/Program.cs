@@ -43,6 +43,7 @@
                 .WithConfigurationBinding<KafkaSettings>("Kafka")
                 .WithConfigurationBinding<MysqlSettings>(CommonMysqlSettings.Section)
                 .WithConfigurationBinding<PlatformSettings>("Platform")
+                .WithConfigurationBinding<InfraGuardSettings>("InfraGuard")
 
                 .WithErrorReturnCode(1)
 

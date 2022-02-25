@@ -6,11 +6,13 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <NoWarn>SA1633, SA1308, SA1309, SA1311, SA1101</NoWarn>
+        <NoWarn>SA1633, SA1303, SA1308, SA1309, SA1310, SA1311, SA1101</NoWarn>
         <!--
         SA1633 - File header.
+        SA1303 - Const field names should begin with uppercase letter.
         SA1308 - Don't start private field with 's_'.
         SA1309 - Don't start private field with '_'.
+        SA1310 - Const field names should not contain an underscore.
         SA1311 - Static readonly fields should begin with uppercase letter.
         SA1101 - Prefix local calls with "this".
         -->

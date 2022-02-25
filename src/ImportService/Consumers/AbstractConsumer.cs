@@ -3,44 +3,44 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Confluent.Kafka;
-    using ImportService.Data;
     using ImportService.Settings;
     using LaunchSharp.Settings;
-    using Microsoft.EntityFrameworkCore;
 
     public abstract class AbstractConsumer<TKey, TValue> : IConsumer
     {
-        private ConsumerConfig _config;
+        private readonly ConsumerConfig _config;
 
-        protected IDbContextFactory<ImportServiceContext> ContextFactory;
+        private readonly string _serviceDomain;
 
-        protected string ServiceDomain;
-
-        public AbstractConsumer(
-            ISettings<KafkaSettings> kafkaSettings,
-            IDbContextFactory<ImportServiceContext> contextFactory)
+        protected AbstractConsumer(ISettings<KafkaSettings> kafkaSettings)
         {
-            // TODO: Move this config to DependencyPackage similar to AdminClientBuilder.
             _config = new ConsumerConfig
             {
                 BootstrapServers = kafkaSettings.GetRequired(s => s.BootstrapServers),
                 AutoOffsetReset = AutoOffsetReset.Earliest,
             };
-            ContextFactory = contextFactory;
-            ServiceDomain = kafkaSettings.GetRequired(s => s.ServiceDomain);
-        }
-
-        public IConsumer<TKey, TValue> GetConsumer()
-        {
-            return new ConsumerBuilder<TKey, TValue>(_config).Build();
+            _serviceDomain = kafkaSettings.GetRequired(s => s.ServiceDomain);
         }
 
         /// <inheritdoc />
         public abstract Task Consume(CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets a new instance of a Kafka consumer.
+        /// </summary>
+        /// <returns>Instance of Kafka IConsumer.</returns>
+        protected IConsumer<TKey, TValue> GetConsumer()
+        {
+            return new ConsumerBuilder<TKey, TValue>(_config).Build();
+        }
+
+        /// <summary>
+        /// Sets the group id in config for the consumer group.
+        /// </summary>
+        /// <param name="groupId">Group id.</param>
         protected void SetConfigGroupId(string groupId)
         {
-            _config.GroupId = $"{ServiceDomain}.{groupId}";
+            _config.GroupId = $"{_serviceDomain}.{groupId}";
         }
     }
 }

@@ -78,10 +78,10 @@ namespace ImportService
         /// <summary>
         /// Application entrypoint.
         /// </summary>
-        /// <returns>N/A</returns>
+        /// <returns>N/A.</returns>
         public async Task Run()
         {
-            Console.WriteLine("Hello World");
+            _logger.LogInformation("Hello World");
 
             // Set up topics.
             var topicNames = typeof(Topics).GetFields(BindingFlags.Static | BindingFlags.Public)
@@ -114,12 +114,11 @@ namespace ImportService
             }
 
             // Start temporary Platform producers to initialize data.
-            // TODO: Delete these producers as we add them into creation processes in Platform API.
             foreach (var producer in _platformProducers)
             {
                 // No need to await since data is not required immediately
                 #pragma warning disable CS4014
-                Task.Factory.StartNew(() => producer.Produce());
+                // Task.Factory.StartNew(() => producer.Produce());
                 #pragma warning restore CS4014
             }
 

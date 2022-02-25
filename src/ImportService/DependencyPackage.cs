@@ -6,6 +6,7 @@ namespace ImportService
     using ImportService.Data;
     using ImportService.Exporters;
     using ImportService.Importers;
+    using ImportService.Importers.InfraGuard;
     using ImportService.Producers;
     using ImportService.Settings;
     using LaunchSharp.AccountAccess;
@@ -28,9 +29,10 @@ namespace ImportService
         {
             container.Register<Application>();
             container.Register<PlatformConnectionFactory>(Lifestyle.Singleton);
+            container.Register<InfraGuardApi>(Lifestyle.Singleton);
 
             // Kafka
-            container.Register<AdminClientBuilder>(
+            container.Register(
                 () => new AdminClientBuilder(new AdminClientConfig
                 {
                     BootstrapServers = container.GetInstance<ISettings<KafkaSettings>>()
@@ -39,6 +41,7 @@ namespace ImportService
                 Lifestyle.Singleton);
 
             // Producers
+            // TODO: Delete IPlatformProducer producers as we add them into creation processes in Platform API.
             container.Collection.Append<IPlatformProducer, AccountProducer>(Lifestyle.Singleton);
             container.Collection.Append<IPlatformProducer, ProviderProducer>(Lifestyle.Singleton);
 

@@ -1,11 +1,14 @@
 ﻿namespace ImportService.Exporters
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using Amazon.EC2;
+    using Amazon.EC2.Model;
     using Amazon.SecurityToken.Model;
+    using Dasync.Collections;
     using ImportService.Data;
     using ImportService.Entities;
     using LaunchSharp.AccountAccess;
@@ -15,7 +18,12 @@
 
     public class AwsExporter : IExporter
     {
-        private const string ProviderName = "AWS";
+        private const string c_providerName = "AWS";
+        private static readonly List<InstanceStateName> s_invalidStates = new ()
+        {
+            InstanceStateName.ShuttingDown,
+            InstanceStateName.Terminated,
+        };
 
         private readonly ICredentialsProvider<AmazonCredentials> _amazonCredentialsProvider;
         private readonly IDbContextFactory<ImportServiceContext> _contextFactory;
@@ -35,21 +43,22 @@
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var awsProvider = await GetAwsProvider(context);
+
+            // TODO: REMOVE TEST ACCOUNT ID
             return await context.CloudAccount
-                    // TODO: REMOVE TEST ACCOUNT ID
-                    .Where(a => a.CloudProviderId == awsProvider.Id && a.CloudProviderAccountId == "061165946885")
-                    .ToListAsync();
+                .Where(a => a.CloudProviderId == awsProvider.Id && a.CloudProviderAccountId == "061165946885")
+                .ToListAsync();
         }
 
         /// <inheritdoc />
         public async Task<IEnumerable<CloudServer>> GetCloudServers(CloudAccount account)
         {
-            var awsCredentials = (await _amazonCredentialsProvider.Credentials(account.CloudProviderAccountId).ToListAsync())
+            var awsCredentials = (await System.Linq.AsyncEnumerable.ToListAsync(_amazonCredentialsProvider.Credentials(account.CloudProviderAccountId)))
                 .FirstOrDefault();
 
             if (awsCredentials == null)
             {
-                throw new Exception($"Missing credentials for {ProviderName} account {account}.");
+                throw new Exception($"Missing credentials for {c_providerName} account {account}.");
             }
 
             using var ec2Client = new AmazonEC2Client(new Credentials
@@ -59,23 +68,10 @@
                 SessionToken = awsCredentials.SessionToken,
             });
 
-            // TODO: Handle pagination.
-            var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync();
-            var cloudServers = new List<CloudServer>();
-            foreach (var awsReservation in awsDescribeInstancesResponse.Reservations)
-            {
-                foreach (var awsInstance in awsReservation.Instances)
-                {
-                    cloudServers.Add(new CloudServer
-                    {
-                        ServerId = awsInstance.InstanceId,
-                        ProfileId = awsInstance.IamInstanceProfile?.Arn,
-                        CloudServerTags = ConvertAwsTagsToCloudServerTags(awsInstance.Tags),
-                    });
-                }
-            }
+            var awsDescribeInstancesRequest = new DescribeInstancesRequest();
+            var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync(awsDescribeInstancesRequest);
 
-            return cloudServers;
+            return await ConvertResponseToCloudServersAsync(awsDescribeInstancesResponse, account);
         }
 
         private static IEnumerable<CloudServerTag> ConvertAwsTagsToCloudServerTags(IEnumerable<Tag> awsTags)
@@ -85,10 +81,51 @@
                 .ToList();
         }
 
+        private async Task<IEnumerable<CloudServer>> ConvertResponseToCloudServersAsync(DescribeInstancesResponse describeInstancesResponse, CloudAccount account)
+        {
+            var pageTasks = new List<Task>();
+            var awsDescribeInstancesRequest = new DescribeInstancesRequest();
+            var cloudServers = new ConcurrentBag<CloudServer>();
+
+            // TODO: Investigate if this runs slowly enough for AWS API / do retry logic.
+            do
+            {
+                var pageTask = describeInstancesResponse.Reservations.ParallelForEachAsync(async awsReservation =>
+                {
+                    await awsReservation.Instances.ParallelForEachAsync(awsInstance =>
+                    {
+                        return Task.Factory.StartNew(() =>
+                        {
+                            if (!s_invalidStates.Contains(awsInstance.State.Name))
+                            {
+                                cloudServers.Add(new CloudServer
+                                {
+                                    CloudAccount = account,
+                                    CloudAccountId = account.Id,
+                                    CloudServerTags = ConvertAwsTagsToCloudServerTags(awsInstance.Tags),
+                                    ProfileId = awsInstance.IamInstanceProfile?.Arn,
+                                    ServerId = awsInstance.InstanceId,
+                                });
+                            }
+                        });
+                    });
+                });
+
+                pageTasks.Add(pageTask);
+
+                awsDescribeInstancesRequest.NextToken = describeInstancesResponse.NextToken;
+            }
+            while (awsDescribeInstancesRequest.NextToken != null);
+
+            await Task.WhenAll(pageTasks.ToArray());
+
+            return cloudServers;
+        }
+
         private async Task<CloudProvider> GetAwsProvider(ImportServiceContext context)
         {
             _cachedAwsProvider ??= await context.CloudProvider.FirstOrDefaultAsync(
-                p => p.Name == ProviderName);
+                p => p.Name == c_providerName);
 
             return _cachedAwsProvider;
         }

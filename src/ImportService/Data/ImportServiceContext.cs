@@ -1,7 +1,5 @@
 ﻿namespace ImportService.Data
 {
-    using System;
-    using System.IO;
     using Common.Entities;
     using Common.Settings;
     using ImportService.Entities;
@@ -9,6 +7,7 @@
     using Microsoft.EntityFrameworkCore.Metadata;
     using Microsoft.Extensions.Configuration;
 
+    /// <inheritdoc />
     public class ImportServiceContext : DbContext
     {
         /// <summary>
@@ -23,11 +22,18 @@
 
         private readonly string _initializationType;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImportServiceContext"/> class.
+        /// </summary>
         public ImportServiceContext()
         {
             _initializationType = ParameterlessInitializationType;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImportServiceContext"/> class.
+        /// </summary>
+        /// <param name="dbContextOptions">Database options.</param>
         public ImportServiceContext(DbContextOptions dbContextOptions)
         : base(dbContextOptions)
         {
@@ -38,6 +44,7 @@
 
         public DbSet<CloudProvider> CloudProvider { get; set; }
 
+        /// <inheritdoc />
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (_initializationType.Equals(ParameterlessInitializationType))
@@ -55,6 +62,7 @@
             }
         }
 
+        /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             ConfigureRelationships(modelBuilder);
@@ -90,29 +98,6 @@
             modelBuilder.Entity<TEntity>().Property(e => e.CreatedAt).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
             modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
             modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-        }
-
-        private string GetBaseProjectDirectory()
-        {
-            string path = null;
-            string prevDirectory = null;
-            var currentDirectory = Directory.GetCurrentDirectory();
-
-            while (string.IsNullOrEmpty(path))
-            {
-                var substringStartPos = currentDirectory.LastIndexOf(Path.DirectorySeparatorChar) + 1;
-                if (currentDirectory.Substring(substringStartPos) == "src")
-                {
-                    path = prevDirectory;
-                }
-                else
-                {
-                    prevDirectory = currentDirectory;
-                    currentDirectory = Directory.GetParent(currentDirectory).FullName;
-                }
-            }
-
-            return path;
         }
     }
 }

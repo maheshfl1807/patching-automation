@@ -1,61 +1,154 @@
 ﻿namespace ImportService.Importers
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
+    using Amazon.EC2;
+    using Amazon.IdentityManagement;
+    using Amazon.IdentityManagement.Model;
+    using Amazon.SecurityToken.Model;
     using ImportService.Entities;
+    using ImportService.Importers.InfraGuard;
+    using ImportService.Importers.InfraGuard.Entities;
+    using ImportService.Settings;
+    using LaunchSharp.AccountAccess;
+    using LaunchSharp.AccountAccess.AmazonIAM;
+    using LaunchSharp.Settings;
 
     /// <summary>
     /// Import cloud servers into InfraGuard as clusters.
     /// </summary>
     public class InfraGuardImporter : IImporter
     {
-        // TODO: Move to environment variables.
-        private static readonly string[] s_validTagKeys = { "Patch Group", "2W_Patch", "2W_Patched" };
-        private static readonly string[] s_invalidTagValues = { "Exclude", "Exempt", "Not patch", "None", "False" };
+        private readonly IEnumerable<string> _validTagKeys;
+        private readonly IEnumerable<string> _invalidTagValues;
+        private readonly string _excludeProjectName;
+        private readonly InfraGuardApi _api;
+        private readonly ICredentialsProvider<AmazonCredentials> _amazonCredentialsProvider;
+
+        public InfraGuardImporter(
+            ISettings<RootSettings> rootSettings,
+            ISettings<InfraGuardSettings> infraGuardSettings,
+            InfraGuardApi infraGuardApi,
+            ICredentialsProvider<AmazonCredentials> amazonCredentialsProvider)
+        {
+            _validTagKeys = rootSettings.GetRequired(s => s.ValidPatchTagKeys);
+            _invalidTagValues = rootSettings.GetRequired(s => s.InvalidPatchTagValues);
+            _excludeProjectName = infraGuardSettings.GetRequired(s => s.ExcludeProjectName);
+            _amazonCredentialsProvider = amazonCredentialsProvider;
+            _api = infraGuardApi;
+        }
 
         /// <inheritdoc />
-        public void Import(IEnumerable<CloudServer> cloudServers)
+        public async void Import(IEnumerable<CloudServer> cloudServers)
         {
-            // TODO: If static, make into extension method possibly.
+            var cloudAccount = cloudServers.First().CloudAccount;
+            var cloudProvider = cloudAccount.CloudProvider;
             var orphanedServers = new List<CloudServer>();
             var missingTagServers = new List<CloudServer>();
             var excludedServers = new List<CloudServer>();
             var profileGroupedServers = GetProfileGroupedServers(
                 cloudServers, orphanedServers, missingTagServers, excludedServers);
 
-            foreach (var profileGroup in profileGroupedServers)
+            // Only add to InfraGuard if there is at least one valid server.
+            if (orphanedServers.Count + excludedServers.Count < cloudServers.Count())
             {
-                // InfraGuard API Docs: https://patching-api.2ndwatch.com/api-docs/#/
+                foreach (var profileGroup in profileGroupedServers)
+                {
+                    if (cloudProvider.Name == "AWS")
+                    {
+                        var instanceProfileName = profileGroup.Key[(profileGroup.Key.LastIndexOf('/') + 1) ..];
 
-                // Build request for InfraGuard /cluster route POST method
+                        // TODO: Figure out where to get ExternalId
+                        var awsCluster = new AwsCluster
+                        {
+                            Name = "imported-by-automation",
+                            RoleArn = await GetRoleArnFromInstanceProfile(instanceProfileName, cloudAccount.CloudProviderAccountId),
+                            ExternalId = "pa-test-external-id",
+                            Provider = "AWS",
+                        };
 
-                // POST /authenticate to get auth token.
+                        var awsClusterResponse = await _api.CreateClusterAsync(awsCluster);
+                        if (!awsClusterResponse.Success &&
+                            !awsClusterResponse.Message.Contains(InfraGuardApi.ClusterAlreadyExistsMessage))
+                        {
+                            // TODO: error, cluster creation failed for uncaught reason.
+                        }
+                    }
+                    else
+                    {
+                        // TODO: error, provider not supported.
+                    }
+                }
 
-                // (IF NECESSARY) GET /cluster and iterate to see if cluster already exists,
-                // skip following POST if does.
+                var projectsResponse = await _api.GetProjectsAsync();
 
-                // POST /cluster to create cluster.
+                Project excludeProject = null;
+                foreach (var project in projectsResponse.Data)
+                {
+                    if (project.Name == _excludeProjectName)
+                    {
+                        excludeProject = project;
+                        break;
+                    }
+                }
 
-                // GET /project to get projects and determine which is Default and which is Exclude
+                if (excludeProject == null)
+                {
+                    // TODO: If exclude project doesn't exist, do we create it or throw error?
+                    throw new Exception($"Project '{_excludeProjectName}' doesn't exist");
+                }
+
+                // TODO: Figure out if servers are immediately imported upon cluster creation.
+                // TODO: If not, kick off sync and wait until complete before running the following
+                var excludedServerIds = excludedServers.Select(server => server.ServerId);
+                var serversResponse = await _api.GetServersAsync();
+                var serverIds = serversResponse.Data
+                    .Where(igServer => excludedServerIds.Contains(igServer.InstanceId))
+                    .Select(igServer => igServer.ServerId);
+
+                await _api.AssignServersToProjectAsync(excludedServerIds, excludeProject.ProjectId);
+
+                // TODO: Send orphanedServers and missingTagServers report, destination TBD.
+            }
+        }
+
+        private async Task<string> GetRoleArnFromInstanceProfile(string awsInstanceProfileName, string awsAccountId)
+        {
+            var awsCredentials = (await System.Linq.AsyncEnumerable.ToListAsync(_amazonCredentialsProvider.Credentials(awsAccountId)))
+                .FirstOrDefault();
+
+            if (awsCredentials == null)
+            {
+                throw new Exception($"Missing credentials for AWS account {awsAccountId}.");
             }
 
-            // PUT /project/assignservers/{exclude project id} using list excludedServers
-            // (there may be some delay between creating cluster and servers existing, keep in mind).
+            using var iamClient = new AmazonIdentityManagementServiceClient(new Credentials
+            {
+                AccessKeyId = awsCredentials.AccessKeyId,
+                SecretAccessKey = awsCredentials.SecretAccessKey,
+                SessionToken = awsCredentials.SessionToken,
+            });
 
-            // Send orphanedServers and missingTagServers report, destination TBD.
+            var instanceProfileRequest = new GetInstanceProfileRequest
+            {
+                InstanceProfileName = awsInstanceProfileName,
+            };
+            var instanceProfileResponse = await iamClient.GetInstanceProfileAsync(instanceProfileRequest);
 
-            throw new System.NotImplementedException();
+            return instanceProfileResponse.InstanceProfile.Roles.First().Arn;
         }
 
         /// <summary>
         /// Groups IEnumberable of CloudServer into Dictionary keyed by ProfileId.
         /// </summary>
-        /// <param name="cloudServers"></param>
-        /// <param name="orphanedServers"></param>
-        /// <returns></returns>
-        private static Dictionary<string, List<CloudServer>> GetProfileGroupedServers(
+        /// <param name="cloudServers">A list of servers exported from a cloud provider.</param>
+        /// <param name="orphanedServers">A list of servers that are missing a profile id.</param>
+        /// <param name="missingTagServers">A list of servers missing the patch tag.</param>
+        /// <param name="excludedServers">A list of servers not meeting criteria to be patchable.</param>
+        /// <returns>A dictionary of lists of servers keyed to their profile ids.</returns>
+        private Dictionary<string, List<CloudServer>> GetProfileGroupedServers(
             IEnumerable<CloudServer> cloudServers,
             List<CloudServer> orphanedServers,
             List<CloudServer> missingTagServers,
@@ -91,23 +184,23 @@
         /// <summary>
         /// Determines if server should appear in missing tag report or should be marked as excluded.
         /// </summary>
-        /// <param name="cloudServer"></param>
-        /// <param name="missingTagServers"></param>
-        /// <param name="excludedServers"></param>
-        private static void CheckServerTags(CloudServer cloudServer, List<CloudServer> missingTagServers, List<CloudServer> excludedServers)
+        /// <param name="cloudServer">The server being checked.</param>
+        /// <param name="missingTagServers">A list of servers missing the patch tag.</param>
+        /// <param name="excludedServers">A list of servers not meeting criteria to be patchable.</param>
+        private void CheckServerTags(CloudServer cloudServer, List<CloudServer> missingTagServers, List<CloudServer> excludedServers)
         {
             var validTagKeyFound = false;
             var validTagValueFound = false;
 
             foreach (var cloudServerTag in cloudServer.CloudServerTags)
             {
-                var isValidTagKey = s_validTagKeys.Any(validTagKey => string.Equals(
+                var isValidTagKey = _validTagKeys.Any(validTagKey => string.Equals(
                     validTagKey, cloudServerTag.Key, StringComparison.OrdinalIgnoreCase));
                 if (isValidTagKey)
                 {
                     validTagKeyFound = true;
 
-                    var isInvalidTagValue = s_invalidTagValues.Any(invalidTagValue => string.Equals(
+                    var isInvalidTagValue = _invalidTagValues.Any(invalidTagValue => string.Equals(
                         invalidTagValue, cloudServerTag.Value, StringComparison.OrdinalIgnoreCase));
                     if (!isInvalidTagValue)
                     {

@@ -1,5 +1,7 @@
 ﻿namespace ImportService.Data
 {
+    using System.Threading;
+    using System.Threading.Tasks;
     using ImportService.Settings;
     using LaunchSharp.Settings;
     using Microsoft.EntityFrameworkCore;
@@ -13,6 +15,7 @@
             _mysqlSettings = mysqlSettings;
         }
 
+        /// <inheritdoc />
         public ImportServiceContext CreateDbContext()
         {
             var connectionString = _mysqlSettings.GetRequired(s => s.ConnectionString);
@@ -21,5 +24,9 @@
 
             return new ImportServiceContext(optionsBuilder.Options);
         }
+
+        /// <inheritdoc />
+        public Task<ImportServiceContext> CreateDbContextAsync(CancellationToken cancellationToken = new ())
+            => Task.FromResult(CreateDbContext());
     }
 }

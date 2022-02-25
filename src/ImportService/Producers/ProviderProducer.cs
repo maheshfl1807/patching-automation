@@ -6,6 +6,7 @@
     using Common;
     using Confluent.Kafka;
     using Dapper;
+    using Dasync.Collections;
     using ImportService.Data;
     using ImportService.Settings;
     using LaunchSharp.Settings;
@@ -33,14 +34,14 @@
         {
             using var producer = GetProducer();
 
-            foreach (var provider in await GetAllPlatformProviders())
+            var platformProviders = await GetAllPlatformProviders();
+            await platformProviders.ParallelForEachAsync(async platformProvider =>
             {
                 await producer.ProduceAsync(Topics.PublicPlatformEntitiesProviders, new Message<Null, string>
                 {
-                    Value = JsonConvert.SerializeObject(provider),
+                    Value = JsonConvert.SerializeObject(platformProvider),
                 });
-                Console.WriteLine($"PROVIDER PRODUCER: {provider.Id}");
-            }
+            });
         }
 
         private async Task<IEnumerable<Provider>> GetAllPlatformProviders()

@@ -6,6 +6,7 @@
     using Common;
     using Confluent.Kafka;
     using Dapper;
+    using Dasync.Collections;
     using ImportService.Data;
     using ImportService.Settings;
     using LaunchSharp.Settings;
@@ -32,15 +33,14 @@
         public override async Task Produce()
         {
             using var producer = GetProducer();
-
-            foreach (var platformAccount in await GetAllValidPlatformAccounts())
+            var platformAccounts = await GetAllValidPlatformAccounts();
+            await platformAccounts.ParallelForEachAsync(async platformAccount =>
             {
                 await producer.ProduceAsync(Topics.PublicPlatformEntitiesAccounts, new Message<Null, string>
                 {
                     Value = JsonConvert.SerializeObject(platformAccount),
                 });
-                Console.WriteLine($"ACCOUNT PRODUCER: {platformAccount.Id}");
-            }
+            });
         }
 
         private async Task<IEnumerable<Account>> GetAllValidPlatformAccounts()
