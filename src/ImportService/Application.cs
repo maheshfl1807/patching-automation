@@ -81,8 +81,6 @@ namespace ImportService
         /// <returns>N/A.</returns>
         public async Task Run()
         {
-            _logger.LogInformation("Hello World");
-
             // Set up topics.
             var topicNames = typeof(Topics).GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(x => x.IsLiteral && !x.IsInitOnly)

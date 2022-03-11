@@ -12,10 +12,13 @@
 
     <ItemGroup>
       <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
-      <PackageReference Include="AWSSDK.Core" Version="3.7.8.2" />
+      <PackageReference Include="AWSSDK.Core" Version="3.7.8.9" />
       <PackageReference Include="AWSSDK.EC2" Version="3.7.59.3" />
       <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.2.108" />
+      <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.33" />
+      <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="3.7.12.22" />
       <PackageReference Include="Confluent.Kafka" Version="1.8.2" />
+      <PackageReference Include="CsvHelper" Version="27.2.1" />
       <PackageReference Include="Dapper.Wrapper" Version="3.1.0" />
       <PackageReference Include="Dapper.Wrapper.Mysql" Version="3.1.0" />
       <PackageReference Include="LaunchSharp" Version="5.8.2" />
@@ -24,6 +27,7 @@
       <PackageReference Include="LaunchSharp.DependencyContainer.SimpleInjector" Version="5.8.2" />
       <PackageReference Include="LaunchSharp.DependencyContainer.SimpleInjector.Packaging" Version="5.8.2" />
       <PackageReference Include="LaunchSharp.Logging.Serilog" Version="5.8.2" />
+      <PackageReference Include="LaunchSharp.Patterns.DownloadToS3" Version="5.8.2" />
       <PackageReference Include="LaunchSharp.Settings" Version="5.8.2" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.2">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -41,11 +45,11 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
-    
+
     <ItemGroup>
         <ProjectReference Include="..\Common\Common.csproj" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <Folder Include="Migrations" />
     </ItemGroup>

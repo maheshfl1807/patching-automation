@@ -15,7 +15,6 @@
 
     /// <summary>
     /// Temporary producer for cloud accounts using the platform DB.
-    /// TODO: Delete this producer when one is added to account creation process.
     /// </summary>
     public class AccountProducer : AbstractProducer<Null, string>, IPlatformProducer
     {
@@ -36,7 +35,7 @@
             var platformAccounts = await GetAllValidPlatformAccounts();
             await platformAccounts.ParallelForEachAsync(async platformAccount =>
             {
-                await producer.ProduceAsync(Topics.PublicPlatformEntitiesAccounts, new Message<Null, string>
+                await producer.ProduceAsync(Topics.PublicPlatformEntitiesAccountsV1, new Message<Null, string>
                 {
                     Value = JsonConvert.SerializeObject(platformAccount),
                 });

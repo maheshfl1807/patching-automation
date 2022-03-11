@@ -41,10 +41,8 @@
         }
 
         /// <inheritdoc />
-        public async void Import(IEnumerable<CloudServer> cloudServers)
+        public async Task Import(IEnumerable<CloudServer> cloudServers, CloudAccount cloudAccount, CloudProvider cloudProvider)
         {
-            var cloudAccount = cloudServers.First().CloudAccount;
-            var cloudProvider = cloudAccount.CloudProvider;
             var orphanedServers = new List<CloudServer>();
             var missingTagServers = new List<CloudServer>();
             var excludedServers = new List<CloudServer>();
@@ -109,8 +107,6 @@
                     .Select(igServer => igServer.ServerId);
 
                 await _api.AssignServersToProjectAsync(excludedServerIds, excludeProject.ProjectId);
-
-                // TODO: Send orphanedServers and missingTagServers report, destination TBD.
             }
         }
 

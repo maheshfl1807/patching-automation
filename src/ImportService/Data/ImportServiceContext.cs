@@ -1,9 +1,12 @@
 ﻿namespace ImportService.Data
 {
+    using System;
+    using System.Drawing;
     using Common.Entities;
     using Common.Settings;
     using ImportService.Entities;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.ChangeTracking;
     using Microsoft.EntityFrameworkCore.Metadata;
     using Microsoft.Extensions.Configuration;
 
@@ -43,6 +46,10 @@
         public DbSet<CloudAccount> CloudAccount { get; set; }
 
         public DbSet<CloudProvider> CloudProvider { get; set; }
+
+        public DbSet<CloudServer> CloudServer { get; set; }
+
+        public DbSet<CloudServerTag> CloudServerTag { get; set; }
 
         /// <inheritdoc />
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -91,11 +98,18 @@
         private void ConfigureMetadataProperties<TEntity>(ModelBuilder modelBuilder)
             where TEntity : AbstractAutoIncrementWithMetadata
         {
+            var valueComparer = new ValueComparer<DateTime>(
+                (x, y) => true,
+                v => v.GetHashCode(),
+                v => v);
+
             modelBuilder.Entity<TEntity>().Property(e => e.CreatedAt).ValueGeneratedOnAdd();
             modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).ValueGeneratedOnAddOrUpdate();
 
+            modelBuilder.Entity<TEntity>().Property(e => e.CreatedAt).Metadata.SetValueComparer(valueComparer);
             modelBuilder.Entity<TEntity>().Property(e => e.CreatedAt).Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
             modelBuilder.Entity<TEntity>().Property(e => e.CreatedAt).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).Metadata.SetValueComparer(valueComparer);
             modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
             modelBuilder.Entity<TEntity>().Property(e => e.UpdatedAt).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
         }

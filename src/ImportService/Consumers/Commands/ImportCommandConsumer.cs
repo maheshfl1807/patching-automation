@@ -2,15 +2,18 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Confluent.Kafka;
     using ImportService.Exporters;
     using ImportService.Importers;
+    using ImportService.Messages;
     using ImportService.Settings;
     using LaunchSharp.Settings;
     using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
 
     public class ImportCommandConsumer : AbstractConsumer<Ignore, string>
     {
@@ -36,7 +39,7 @@
         public override async Task Consume(CancellationToken cancellationToken)
         {
             using var consumer = GetConsumer();
-            consumer.Subscribe(Topics.PublicImportServiceCommandsImport);
+            consumer.Subscribe(Topics.PublicImportServiceCommandsImportV1);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -44,26 +47,29 @@
                 {
                     _logger.LogInformation("Import command consumer waiting for message to consume...");
 
-                    // TODO: Construct a data model for this and use it to control different aspects of importing.
-                    // TODO: Maybe functionality like "only import AWS accounts" or "import these specific account ids"
                     var consumeResult = consumer.Consume(cancellationToken);
+                    var importCommandMessage = JsonConvert.DeserializeObject<ImportCommandMessage>(consumeResult.Message.Value);
 
                     foreach (var exporter in _exporters)
                     {
-                        var cloudAccounts = await exporter.GetCloudAccounts();
-                        foreach (var cloudAccount in cloudAccounts)
+                        var exporterProvider = await exporter.GetCloudProvider();
+                        if (importCommandMessage.ProviderNames == null || importCommandMessage.ProviderNames.Contains(exporterProvider.Name))
                         {
-                            var cloudServers = await exporter.GetCloudServers(cloudAccount);
-                            foreach (var importer in _importers)
+                            var cloudAccounts = await exporter.GetCloudAccounts(importCommandMessage.AccountIds);
+                            foreach (var cloudAccount in cloudAccounts)
                             {
-                                importer.Import(cloudServers);
+                                var cloudServers = await exporter.GetCloudServers(cloudAccount, importCommandMessage.ServerIds);
+                                foreach (var importer in _importers)
+                                {
+                                    await importer.Import(cloudServers, cloudAccount, exporterProvider);
+                                }
                             }
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    // TODO: Catch error.
+                    _logger.LogError("{Message}\n{Stack}", e.Message, e.StackTrace);
                 }
             }
 

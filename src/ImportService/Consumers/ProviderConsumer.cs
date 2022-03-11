@@ -35,7 +35,7 @@
         public override async Task Consume(CancellationToken cancellationToken)
         {
             using var consumer = GetConsumer();
-            consumer.Subscribe(Topics.PublicPlatformEntitiesProviders);
+            consumer.Subscribe(Topics.PublicPlatformEntitiesProvidersV1);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -58,7 +58,7 @@
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("{Message}", e.Message);
+                    _logger.LogError("{Message}\n{Stack}", e.Message, e.StackTrace);
                 }
             }
 

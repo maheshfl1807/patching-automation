@@ -35,7 +35,7 @@
         public override async Task Consume(CancellationToken cancellationToken)
         {
             using var consumer = GetConsumer();
-            consumer.Subscribe(Topics.PublicPlatformEntitiesAccounts);
+            consumer.Subscribe(Topics.PublicPlatformEntitiesAccountsV1);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -74,14 +74,14 @@
                     }
                     else
                     {
-                        // TODO: Throw exception or log, provider name is empty.
+                        throw new Exception("Provider name was not specified.");
                     }
 
                     await context.SaveChangesAsync(cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("{Message}", e.Message);
+                    _logger.LogError("{Message}\n{Stack}", e.Message, e.StackTrace);
                 }
             }
 

@@ -18,7 +18,7 @@
         public uint CloudAccountId { get; set; }
 
         /// <summary>
-        /// Gets or sets the cloud provider's identifier of the server.
+        /// Gets or sets the cloud provider's globally unique identifier of the server.
         /// </summary>
         public string ServerId { get; set; }
 

@@ -1,6 +1,8 @@
 namespace ImportService
 {
+    using Amazon.S3.Transfer;
     using Confluent.Kafka;
+    using CsvHelper;
     using ImportService.Consumers;
     using ImportService.Consumers.Commands;
     using ImportService.Data;
@@ -9,9 +11,11 @@ namespace ImportService
     using ImportService.Importers.InfraGuard;
     using ImportService.Producers;
     using ImportService.Settings;
+    using LaunchSharp;
     using LaunchSharp.AccountAccess;
     using LaunchSharp.AccountAccess.AmazonIAM;
     using LaunchSharp.DependencyContainer.SimpleInjector.Packaging;
+    using LaunchSharp.Patterns.DownloadToS3;
     using LaunchSharp.Settings;
     using Microsoft.EntityFrameworkCore;
     using SimpleInjector;
@@ -54,7 +58,8 @@ namespace ImportService
             container.Collection.Append<IExporter, AwsExporter>(Lifestyle.Singleton);
 
             // Importers
-            container.Collection.Append<IImporter, InfraGuardImporter>(Lifestyle.Singleton);
+            // container.Collection.Append<IImporter, InfraGuardImporter>(Lifestyle.Singleton);
+            container.Collection.Append<IImporter, ImportServiceImporter>(Lifestyle.Singleton);
 
             // Amazon Security
             container.Register<IAccountSecretArnProvider<AmazonCredentials>, AccountSecretArnProvider>(
@@ -73,6 +78,8 @@ namespace ImportService
             // Import Service Context
             container.Register<IDbContextFactory<ImportServiceContext>, ImportServiceContextFactory>(
                 Lifestyle.Singleton);
+
+            container.Register<IFactory<ITransferUtility>, TransferUtilityFactory>(Lifestyle.Singleton);
         }
     }
 }

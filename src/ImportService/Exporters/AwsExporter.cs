@@ -8,7 +8,6 @@
     using Amazon.EC2;
     using Amazon.EC2.Model;
     using Amazon.SecurityToken.Model;
-    using Dasync.Collections;
     using ImportService.Data;
     using ImportService.Entities;
     using LaunchSharp.AccountAccess;
@@ -16,9 +15,10 @@
     using Microsoft.EntityFrameworkCore;
     using Tag = Amazon.EC2.Model.Tag;
 
-    public class AwsExporter : IExporter
+    public class AwsExporter : AbstractExporter
     {
         private const string c_providerName = "AWS";
+
         private static readonly List<InstanceStateName> s_invalidStates = new ()
         {
             InstanceStateName.ShuttingDown,
@@ -26,32 +26,39 @@
         };
 
         private readonly ICredentialsProvider<AmazonCredentials> _amazonCredentialsProvider;
+
         private readonly IDbContextFactory<ImportServiceContext> _contextFactory;
-        private CloudProvider _cachedAwsProvider;
 
         public AwsExporter(
             ICredentialsProvider<AmazonCredentials> amazonCredentialsProvider,
             IDbContextFactory<ImportServiceContext> contextFactory)
+            : base(contextFactory, c_providerName)
         {
             _amazonCredentialsProvider = amazonCredentialsProvider;
             _contextFactory = contextFactory;
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<CloudAccount>> GetCloudAccounts()
+        public override async Task<IEnumerable<CloudAccount>> GetCloudAccounts(IEnumerable<string> accountIdsFilter)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            var awsProvider = await GetAwsProvider(context);
+            var awsProvider = await GetCloudProvider();
+            var baseQuery = context.CloudAccount
+                .Where(a => a.CloudProviderId == awsProvider.Id);
 
-            // TODO: REMOVE TEST ACCOUNT ID
-            return await context.CloudAccount
-                .Where(a => a.CloudProviderId == awsProvider.Id && a.CloudProviderAccountId == "061165946885")
-                .ToListAsync();
+            if (accountIdsFilter != null)
+            {
+                baseQuery = baseQuery.Where(a => accountIdsFilter.Contains(a.CloudProviderAccountId));
+            }
+
+            return await baseQuery.ToListAsync();
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<CloudServer>> GetCloudServers(CloudAccount account)
+        public override async Task<IEnumerable<CloudServer>> GetCloudServers(
+            CloudAccount account,
+            IEnumerable<string> serverIdsFilter)
         {
             var awsCredentials = (await System.Linq.AsyncEnumerable.ToListAsync(_amazonCredentialsProvider.Credentials(account.CloudProviderAccountId)))
                 .FirstOrDefault();
@@ -69,6 +76,11 @@
             });
 
             var awsDescribeInstancesRequest = new DescribeInstancesRequest();
+            if (serverIdsFilter != null)
+            {
+                awsDescribeInstancesRequest.InstanceIds = serverIdsFilter.ToList();
+            }
+
             var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync(awsDescribeInstancesRequest);
 
             return await ConvertResponseToCloudServersAsync(awsDescribeInstancesResponse, account);
@@ -87,29 +99,29 @@
             var awsDescribeInstancesRequest = new DescribeInstancesRequest();
             var cloudServers = new ConcurrentBag<CloudServer>();
 
-            // TODO: Investigate if this runs slowly enough for AWS API / do retry logic.
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            // TODO: Investigate if this runs slowly enough for AWS API to not get throttled. If it doesn't, add retry logic.
             do
             {
-                var pageTask = describeInstancesResponse.Reservations.ParallelForEachAsync(async awsReservation =>
+                var pageTask = Task.Factory.StartNew(() => describeInstancesResponse.Reservations.AsParallel().ForEach(awsReservation =>
                 {
-                    await awsReservation.Instances.ParallelForEachAsync(awsInstance =>
+                    awsReservation.Instances.AsParallel().ForEach(awsInstance =>
                     {
-                        return Task.Factory.StartNew(() =>
+                        if (!s_invalidStates.Contains(awsInstance.State.Name))
                         {
-                            if (!s_invalidStates.Contains(awsInstance.State.Name))
+                            var newCloudServer = new CloudServer
                             {
-                                cloudServers.Add(new CloudServer
-                                {
-                                    CloudAccount = account,
-                                    CloudAccountId = account.Id,
-                                    CloudServerTags = ConvertAwsTagsToCloudServerTags(awsInstance.Tags),
-                                    ProfileId = awsInstance.IamInstanceProfile?.Arn,
-                                    ServerId = awsInstance.InstanceId,
-                                });
-                            }
-                        });
+                                CloudAccountId = account.Id,
+                                ProfileId = awsInstance.IamInstanceProfile?.Arn,
+                                ServerId = awsInstance.InstanceId,
+                                CloudServerTags = ConvertAwsTagsToCloudServerTags(awsInstance.Tags),
+                            };
+
+                            cloudServers.Add(newCloudServer);
+                        }
                     });
-                });
+                }));
 
                 pageTasks.Add(pageTask);
 
@@ -120,14 +132,6 @@
             await Task.WhenAll(pageTasks.ToArray());
 
             return cloudServers;
-        }
-
-        private async Task<CloudProvider> GetAwsProvider(ImportServiceContext context)
-        {
-            _cachedAwsProvider ??= await context.CloudProvider.FirstOrDefaultAsync(
-                p => p.Name == c_providerName);
-
-            return _cachedAwsProvider;
         }
     }
 }
