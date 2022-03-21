@@ -1,0 +1,51 @@
+﻿include:
+  - project: '2ndwatch/gitlab-ci'
+    ref: 'v3.6.1-rc1'
+    file: '/aws-access.yml'
+  - project: '2ndwatch/gitlab-ci'
+    ref: 'v3.6.1-rc1'
+    file: '/gitlab-cr.yml'
+  - project: '2ndwatch/gitlab-ci'
+    ref: 'v3.6.1-rc1'
+    file: '/dotnet.yml'
+  - project: '2ndwatch/gitlab-ci'
+    ref: 'v3.6.1-rc1'
+    file: '/dotnet6.x-application.yml'
+  - project: '2ndwatch/gitlab-ci'
+    ref: 'v3.6.1-rc1'
+    file: '/github.yml'
+
+variables:
+  PULL_BUILD_IMAGE: gl_pa-issue-report-service
+  PULL_BUILD_DIR: ./src/IssueReportService
+  BUILD_DIR: $PULL_BUILD_DIR
+
+stages:
+  - build
+  - push
+  - pull-request
+
+secrets:
+  stage: build
+  extends: .aws-access-with-secrets
+  script:
+    - echo "Loaded secrets into cache."
+
+build:
+  stage: build
+  extends: .dotnet-build-and-publish
+  variables:
+    PROJECT_DIR: $PULL_BUILD_DIR
+    BUILD_CONFIG: Release
+
+push-dev:
+  stage: push
+  extends: .gitlab-cr-push-dev
+  variables:
+    IMAGE_NAME: $PULL_BUILD_IMAGE
+
+push-prod:
+  stage: push
+  extends: .gitlab-cr-push-prod
+  variables:
+    IMAGE_NAME: $PULL_BUILD_IMAGE
