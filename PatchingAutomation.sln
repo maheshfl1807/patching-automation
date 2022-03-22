@@ -1,6 +1,6 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IssueReportService", "src\IssueReportService\IssueReportService.csproj", "{15A4B1E3-E963-4AF1-8A17-680FA69B2691}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerReportService", "src\ServerReportService\ServerReportService.csproj", "{15A4B1E3-E963-4AF1-8A17-680FA69B2691}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7248046F-580D-476E-A90D-3A2A88860BF2}"
 EndProject

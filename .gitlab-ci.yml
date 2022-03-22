@@ -16,8 +16,8 @@ include:
     file: '/github.yml'
 
 variables:
-  PULL_BUILD_IMAGE: gl_pa-issue-report-service
-  PULL_BUILD_DIR: ./src/IssueReportService
+  PULL_BUILD_IMAGE: gl_pa-server-report-service
+  PULL_BUILD_DIR: ./src/ServerReportService
   BUILD_DIR: $PULL_BUILD_DIR
 
 stages:
