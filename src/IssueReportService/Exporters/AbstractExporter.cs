@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Exporters
+namespace IssueReportService.Exporters
 {
     using System;
     using System.Collections.Concurrent;

@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Importers.InfraGuard.Responses
+namespace IssueReportService.Importers.InfraGuard.Responses
 {
     public class AuthenticateData
     {

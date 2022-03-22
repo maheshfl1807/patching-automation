@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Csv
+namespace IssueReportService.Csv
 {
     using CsvHelper.Configuration;
 

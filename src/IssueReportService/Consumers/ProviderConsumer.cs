@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Consumers
+namespace IssueReportService.Consumers
 {
     using System;
     using System.Threading;

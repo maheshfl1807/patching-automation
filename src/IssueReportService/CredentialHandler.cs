@@ -1,4 +1,4 @@
-﻿namespace IssueReportService
+namespace IssueReportService
 {
     using System;
     using System.Collections.Generic;

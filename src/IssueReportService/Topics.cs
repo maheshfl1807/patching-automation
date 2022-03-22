@@ -1,4 +1,4 @@
-﻿// Disable requiring XML comments as all const names should be self-explanatory.
+// Disable requiring XML comments as all const names should be self-explanatory.
 #pragma warning disable CS1591
 
 namespace IssueReportService

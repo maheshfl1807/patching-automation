@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Entities
+namespace IssueReportService.Entities
 {
     using System;
     using System.ComponentModel.DataAnnotations.Schema;

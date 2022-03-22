@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Messages
+namespace IssueReportService.Messages
 {
     using System.Collections.Generic;
 

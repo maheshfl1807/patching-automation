@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Settings
+namespace IssueReportService.Settings
 {
     /// <summary>
     /// Settings related to Platform configuration.
