@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Consumers.Commands
+namespace IssueReportService.Consumers.Commands
 {
     using System;
     using System.Collections.Concurrent;

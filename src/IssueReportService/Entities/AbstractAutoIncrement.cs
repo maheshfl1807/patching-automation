@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Entities
+namespace IssueReportService.Entities
 {
     /// <summary>
     /// Abstract class for entities to inherit that use an auto increment id.

@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Csv
+namespace IssueReportService.Csv
 {
     public class ServerIssueReport
     {

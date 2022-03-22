@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Producers
+namespace IssueReportService.Producers
 {
     using System.Threading.Tasks;
 

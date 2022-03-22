@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Importers.InfraGuard
+namespace IssueReportService.Importers.InfraGuard
 {
     using System;
     using System.Collections.Generic;

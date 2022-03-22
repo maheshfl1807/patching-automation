@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Importers.InfraGuard.Entities
+namespace IssueReportService.Importers.InfraGuard.Entities
 {
     public class AwsCluster : AbstractCluster
     {

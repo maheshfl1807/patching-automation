@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Importers.InfraGuard.Responses
+namespace IssueReportService.Importers.InfraGuard.Responses
 {
     using System.Collections.Generic;
     using Entities;

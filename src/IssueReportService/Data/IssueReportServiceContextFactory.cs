@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Data
+namespace IssueReportService.Data
 {
     using System.Threading;
     using System.Threading.Tasks;

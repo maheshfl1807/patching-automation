@@ -1,4 +1,4 @@
-﻿namespace IssueReportService
+namespace IssueReportService
 {
     using IssueReportService.Settings;
     using LaunchSharp;

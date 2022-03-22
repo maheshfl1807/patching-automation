@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Entities
+namespace IssueReportService.Entities
 {
     using System.ComponentModel.DataAnnotations;
     using Microsoft.EntityFrameworkCore;

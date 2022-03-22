@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Settings
+namespace IssueReportService.Settings
 {
     public class InfraGuardSettings
     {

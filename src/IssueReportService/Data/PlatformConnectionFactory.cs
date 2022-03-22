@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Data
+namespace IssueReportService.Data
 {
     using LaunchSharp.Settings;
     using MySqlConnector;

@@ -1,4 +1,4 @@
-﻿namespace IssueReportService.Importers.InfraGuard.Entities
+namespace IssueReportService.Importers.InfraGuard.Entities
 {
     using System.Collections.Generic;
     using System.Text.Json.Serialization;
