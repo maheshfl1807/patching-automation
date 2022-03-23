@@ -8,9 +8,11 @@ namespace ServerReportService
     using System.Threading.Tasks;
     using Confluent.Kafka;
     using Confluent.Kafka.Admin;
+    using LaunchSharp.Settings;
     using Microsoft.Extensions.Logging;
     using ServerReportService.Consumers;
     using ServerReportService.Producers;
+    using ServerReportService.Settings;
 
     /// <summary>
     /// Application.
@@ -38,22 +40,30 @@ namespace ServerReportService
         private readonly ServerReportCommandProducer _serverReportCommandProducer;
 
         /// <summary>
+        /// Determines whether the service runs in producer or consumer mode.
+        /// </summary>
+        private readonly bool _isProducer;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         /// <param name="logger">Logger.</param>
         /// <param name="kafkaAdminClientBuilder">Kafka AdminClient Builder.</param>
         /// <param name="consumers">List of consumers to run.</param>
         /// <param name="serverReportCommandProducer">Temporary producer for kickoff message.</param>
+        /// <param name="rootSettings">Root settings of the service.</param>
         public Application(
             ILogger logger,
             AdminClientBuilder kafkaAdminClientBuilder,
             IEnumerable<IConsumer> consumers,
-            ServerReportCommandProducer serverReportCommandProducer)
+            ServerReportCommandProducer serverReportCommandProducer,
+            ISettings<RootSettings> rootSettings)
         {
             _logger = logger;
             _kafkaAdminClient = kafkaAdminClientBuilder.Build();
             _consumers = consumers;
             _serverReportCommandProducer = serverReportCommandProducer;
+            _isProducer = rootSettings.Get(s => s.IsProducer);
         }
 
         /// <summary>
@@ -62,6 +72,13 @@ namespace ServerReportService
         /// <returns>N/A.</returns>
         public async Task Run()
         {
+            if (_isProducer)
+            {
+                // Produce kickoff message
+                await _serverReportCommandProducer.Produce();
+                return;
+            }
+
             // Set up topics.
             var topicNames = typeof(Topics).GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(x => x.IsLiteral && !x.IsInitOnly)
@@ -91,9 +108,6 @@ namespace ServerReportService
                     Environment.Exit(-1);
                 }
             }
-
-            // Produce kickoff message
-            await _serverReportCommandProducer.Produce();
 
             // Start consumers
             var consumerCancellationTokenSource = new CancellationTokenSource();

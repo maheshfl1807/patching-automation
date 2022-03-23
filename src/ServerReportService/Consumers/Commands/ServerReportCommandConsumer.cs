@@ -72,8 +72,8 @@ namespace ServerReportService.Consumers.Commands
             using var consumer = GetConsumer();
             consumer.Subscribe(Topics.PublicServerReportServiceCommandsServerReportV1);
 
-            // while (!cancellationToken.IsCancellationRequested)
-            // {
+            while (!cancellationToken.IsCancellationRequested)
+            {
                 try
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
@@ -144,7 +144,7 @@ namespace ServerReportService.Consumers.Commands
                 {
                     _logger.LogError("{Message}\n{Stack}", e.Message, e.StackTrace);
                 }
-            // }
+            }
 
             consumer.Close();
         }
