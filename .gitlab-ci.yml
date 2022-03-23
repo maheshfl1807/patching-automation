@@ -1,18 +1,18 @@
 include:
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc2'
+    ref: 'v3.6.1'
     file: '/aws-access.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc2'
+    ref: 'v3.6.1'
     file: '/gitlab-cr.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc2'
+    ref: 'v3.6.1'
     file: '/dotnet.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc2'
+    ref: 'v3.6.1'
     file: '/dotnet6.x-application.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc2'
+    ref: 'v3.6.1'
     file: '/github.yml'
 
 variables:
