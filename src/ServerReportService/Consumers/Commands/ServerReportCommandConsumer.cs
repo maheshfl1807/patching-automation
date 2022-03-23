@@ -72,8 +72,8 @@ namespace ServerReportService.Consumers.Commands
             using var consumer = GetConsumer();
             consumer.Subscribe(Topics.PublicServerReportServiceCommandsServerReportV1);
 
-            while (!cancellationToken.IsCancellationRequested)
-            {
+            // while (!cancellationToken.IsCancellationRequested)
+            // {
                 try
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
@@ -124,9 +124,11 @@ namespace ServerReportService.Consumers.Commands
                             cancellationToken);
                     }
 
+                    var sortedServerReports = serverReports.OrderBy(serverReport => serverReport.AccountId);
+
                     // Write out compressed CSV of server reports to memory stream.
                     await using var s3Stream = new MemoryStream();
-                    await WriteCompressedCsvToMemoryStreamAsync<ServerReport, ServerReportMap>(s3Stream, serverReports);
+                    await WriteCompressedCsvToMemoryStreamAsync<ServerReport, ServerReportMap>(s3Stream, sortedServerReports);
 
                     // Upload stream to S3.
                     var reportKey = string.Format(_s3ReportKey, $"{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}");
@@ -142,7 +144,7 @@ namespace ServerReportService.Consumers.Commands
                 {
                     _logger.LogError("{Message}\n{Stack}", e.Message, e.StackTrace);
                 }
-            }
+            // }
 
             consumer.Close();
         }
@@ -215,7 +217,7 @@ namespace ServerReportService.Consumers.Commands
                 Message = Smart.Format(_snsReportMessageTemplate, new
                 {
                     serverReports,
-                    accountsWithCredentialIssues = accountsWithCredentialIssues.Keys,
+                    accountsWithCredentialIssues = accountsWithCredentialIssues.Keys.OrderBy(accountId => accountId).ToList(),
                     reportUrl,
                 }),
                 TopicArn = _snsReportTopicArn,
