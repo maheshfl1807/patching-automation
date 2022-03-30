@@ -1,23 +1,23 @@
-﻿include:
+include:
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc1'
+    ref: 'v3.6.2'
     file: '/aws-access.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc1'
+    ref: 'v3.6.2'
     file: '/gitlab-cr.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc1'
+    ref: 'v3.6.2'
     file: '/dotnet.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc1'
+    ref: 'v3.6.2'
     file: '/dotnet6.x-application.yml'
   - project: '2ndwatch/gitlab-ci'
-    ref: 'v3.6.1-rc1'
+    ref: 'v3.6.2'
     file: '/github.yml'
 
 variables:
-  PULL_BUILD_IMAGE: gl_pa-issue-report-service
-  PULL_BUILD_DIR: ./src/IssueReportService
+  PULL_BUILD_IMAGE: gl_pa-server-report-service
+  PULL_BUILD_DIR: ./src/ServerReportService
   BUILD_DIR: $PULL_BUILD_DIR
 
 stages:
