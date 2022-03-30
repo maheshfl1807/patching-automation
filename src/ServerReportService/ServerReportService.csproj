@@ -42,4 +42,10 @@
       <PackageReference Include="SmartFormat.NET" Version="3.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="appsettings.local.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>
