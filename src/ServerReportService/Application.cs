@@ -72,13 +72,6 @@ namespace ServerReportService
         /// <returns>N/A.</returns>
         public async Task Run()
         {
-            if (_isProducer)
-            {
-                // Produce kickoff message
-                await _serverReportCommandProducer.Produce();
-                return;
-            }
-
             // Set up topics.
             var topicNames = typeof(Topics).GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(x => x.IsLiteral && !x.IsInitOnly)
@@ -109,16 +102,24 @@ namespace ServerReportService
                 }
             }
 
-            // Start consumers
-            var consumerCancellationTokenSource = new CancellationTokenSource();
-            var consumerTasks = new List<Task>();
-            foreach (var consumer in _consumers)
+            if (_isProducer)
             {
-                consumerTasks.Add(Task.Run(
-                    async () => await consumer.Consume(consumerCancellationTokenSource.Token), consumerCancellationTokenSource.Token));
+                // Produce kickoff message
+                await _serverReportCommandProducer.Produce();
             }
+            else
+            {
+                // Start consumers
+                var consumerCancellationTokenSource = new CancellationTokenSource();
+                var consumerTasks = new List<Task>();
+                foreach (var consumer in _consumers)
+                {
+                    consumerTasks.Add(Task.Run(
+                        async () => await consumer.Consume(consumerCancellationTokenSource.Token), consumerCancellationTokenSource.Token));
+                }
 
-            await Task.WhenAll(consumerTasks.ToArray());
+                await Task.WhenAll(consumerTasks.ToArray());
+            }
         }
     }
 }

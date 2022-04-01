@@ -58,7 +58,7 @@ module "service_role" {
   role_assume_policy_configs = [
     {
       principal_type  = "Federated"
-      principal_value = [var.eks_oidc_provider_arn, var.eks2_oidc_provider_arn]
+      principal_value = [var.eks2_oidc_provider_arn, var.eks_oidc_provider_arn]
       action          = "sts:AssumeRoleWithWebIdentity"
     }
   ]
