@@ -31,6 +31,8 @@ locals {
   eks2_oidc_provider_arn = "arn:aws:iam::061165946885:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/314643C241F99EDD32E923193EB60033"
   vpc_id = data.terraform_remote_state.dev.outputs.module_vpc_vpc_id
   main_region = "us-west-2"
+  msk_cluster_name = "dev-eng-msk-cluster"
+  msk_cluster_id = "f37b7496-4d79-44e2-9428-f09e1dbc93a7-8"
 }
 
 module "shared" {
@@ -43,4 +45,6 @@ module "shared" {
   eks2_oidc_provider_arn = local.eks2_oidc_provider_arn
   vpc_id = local.vpc_id
   main_region = local.main_region
+  msk_cluster_name = local.msk_cluster_name
+  msk_cluster_id = local.msk_cluster_id
 }

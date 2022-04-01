@@ -17,3 +17,11 @@ variable "vpc_id" {
 variable "main_region" {
   description = "Region where resources will be created."
 }
+
+variable "msk_cluster_name" {
+  description = "Name of the MSK cluster."
+}
+
+variable "msk_cluster_id" {
+  description = "Identifier of the MSK cluster."
+}

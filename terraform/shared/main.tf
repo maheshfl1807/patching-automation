@@ -96,6 +96,37 @@ module "service_role" {
                 "kms:GenerateDataKey*"
             ],
             "Resource": "${module.report_bucket.main_kms_arn}"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kafka-cluster:Connect",
+                "kafka-cluster:DescribeCluster"
+            ],
+            "Resource": [
+                "arn:aws:kafka:${var.main_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.msk_cluster_name}/${var.msk_cluster_id}"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kafka-cluster:*Topic*",
+                "kafka-cluster:WriteData",
+                "kafka-cluster:ReadData"
+            ],
+            "Resource": [
+                "arn:aws:kafka:${var.main_region}:${data.aws_caller_identity.current.account_id}:topic/${var.msk_cluster_name}/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kafka-cluster:AlterGroup",
+                "kafka-cluster:DescribeGroup"
+            ],
+            "Resource": [
+                "arn:aws:kafka:${var.main_region}:${data.aws_caller_identity.current.account_id}:group/${var.msk_cluster_name}/*"
+            ]
         }
     ]
 }
