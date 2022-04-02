@@ -17,6 +17,7 @@
         {
             _config = new ProducerConfig
             {
+                Debug = kafkaSettings.GetRequired(s => s.DebugSettings),
                 BootstrapServers = kafkaSettings.GetRequired(s => s.BootstrapServers),
             };
         }

@@ -84,8 +84,6 @@ namespace ServerReportService
                 topicSpecifications.Add(new TopicSpecification
                 {
                     Name = topicName,
-                    ReplicationFactor = 1,
-                    NumPartitions = 1,
                 });
             }
 

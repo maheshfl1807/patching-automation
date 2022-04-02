@@ -40,6 +40,8 @@ namespace ServerReportService
             container.Register(
                 () => new AdminClientBuilder(new AdminClientConfig
                 {
+                    Debug = container.GetInstance<ISettings<KafkaSettings>>()
+                        .GetRequired(s => s.DebugSettings),
                     BootstrapServers = container.GetInstance<ISettings<KafkaSettings>>()
                         .GetRequired(s => s.BootstrapServers),
                 }),

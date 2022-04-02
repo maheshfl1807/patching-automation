@@ -31,25 +31,29 @@
 
         public async Task<Credentials> GetAccountCredentials(string accountId, RegionEndpoint region)
         {
-            Credentials credentials = null;
-
+            Credentials customerCredentials = null;
             try
             {
-                var chain = new CredentialProfileStoreChain();
 
-                if (chain.TryGetAWSCredentials("mcs", out var mcsCredentials))
+                var defaultClient = new AmazonSecurityTokenServiceClient();
+                var platformAutomationAssumeRequest = new AssumeRoleRequest
                 {
-                    using var securityTokenClient = new AmazonSecurityTokenServiceClient(mcsCredentials, region);
-                    var assumeRoleRequest = new AssumeRoleRequest
-                    {
-                        RoleArn = $"arn:aws:iam::{accountId}:role/2ndWatch/2WMSAdminRole",
-                        RoleSessionName = "PatchingAutomation",
-                        ExternalId = _accountToExternalIdMap[accountId],
-                    };
-                    var assumeRoleResponse = await securityTokenClient.AssumeRoleAsync(assumeRoleRequest);
+                    RoleArn = $"arn:aws:iam::536269885160:role/2WPlatformAutomationAssumeRoleRole",
+                    RoleSessionName = "PatchingAutomation",
+                    ExternalId = "pzf3apb53cqaa27qx9f5mdad2hz63a3nm4th3eeqd6puqx5wpqscwg3w8dy8wy4m",
+                };
+                var platformAutomationAssumeResponse = await defaultClient.AssumeRoleAsync(platformAutomationAssumeRequest);
 
-                    credentials = assumeRoleResponse.Credentials;
-                }
+                using var securityTokenClient = new AmazonSecurityTokenServiceClient(platformAutomationAssumeResponse.Credentials, region);
+                var customerAssumeRequest = new AssumeRoleRequest
+                {
+                    RoleArn = $"arn:aws:iam::{accountId}:role/2ndWatch/2WMSAdminRole",
+                    RoleSessionName = "PatchingAutomation",
+                    ExternalId = _accountToExternalIdMap[accountId],
+                };
+                var customerAssumeReponse = await securityTokenClient.AssumeRoleAsync(customerAssumeRequest);
+
+                customerCredentials = customerAssumeReponse.Credentials;
             }
             catch (Exception e)
             {
@@ -57,7 +61,7 @@
                     $"An error occurred when assuming role for account {accountId}, region {region.DisplayName}: {e.Message}");
             }
 
-            return credentials;
+            return customerCredentials;
         }
     }
 }

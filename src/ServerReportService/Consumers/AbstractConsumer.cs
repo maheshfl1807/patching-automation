@@ -16,6 +16,7 @@ namespace ServerReportService.Consumers
         {
             _config = new ConsumerConfig
             {
+                Debug = kafkaSettings.GetRequired(s => s.DebugSettings),
                 BootstrapServers = kafkaSettings.GetRequired(s => s.BootstrapServers),
                 AutoOffsetReset = AutoOffsetReset.Earliest,
             };
