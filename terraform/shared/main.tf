@@ -1,23 +1,9 @@
-# pzf3apb53cqaa27qx9f5mdad2hz63a3nm4th3eeqd6puqx5wpqscwg3w8dy8wy4m
-
-data "terraform_remote_state" "global" {
-  backend = "s3"
-  config = {
-    bucket = "2w-pe-terraform"
-    key    = "global/terraform.tfstate"
-    region = "us-west-2"
-  }
-}
-
 data "aws_caller_identity" "current" {
   provider = aws
 }
 
 locals {
   vpc_access_point_name = "${var.env}-server-report-service-reports"
-  global_outputs = {
-    datalake_2w_datalake_iam_policy_readwrite_arn = data.terraform_remote_state.global.outputs.datalake_2w_datalake_iam_policy_readwrite_arn
-  }
 }
 
 module "report_bucket" {
@@ -103,7 +89,9 @@ module "service_role" {
             "Action": [
                 "sns:Publish"
             ],
-            "Resource": "${aws_sns_topic.report_topic.arn}"
+            "Resource": [
+                "${aws_sns_topic.report_topic.arn}"
+            ]
         }
     ]
 }
