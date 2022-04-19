@@ -19,7 +19,7 @@ namespace ServerReportService.Exporters
     {
         private const string c_providerName = "AWS";
 
-        private static readonly List<InstanceStateName> s_invalidStates = new ()
+        private static readonly List<InstanceStateName> s_invalidStates = new()
         {
             InstanceStateName.ShuttingDown,
             InstanceStateName.Terminated,
@@ -95,7 +95,7 @@ namespace ServerReportService.Exporters
                 && !invalidRegions.Contains(region.SystemName));
             foreach (var regionEndpoint in validRegions)
             {
-                var credentials = await _credentialHandler.GetAccountCredentials(account.CloudProviderAccountId, regionEndpoint);
+                var credentials = await _credentialHandler.GetAwsAccountCredentials(account.CloudProviderAccountId, regionEndpoint);
 
                 if (credentials != null)
                 {

@@ -66,8 +66,8 @@ namespace ServerReportService
             container.Collection.Append<IImporter, ServerReportImporter>(Lifestyle.Singleton);
 
             // Amazon Security
-            // container.Register<IAccountSecretArnProvider<AmazonCredentials>, AccountSecretArnProvider>(
-            //     Lifestyle.Singleton);
+            container.Register<IAccountSecretArnProvider<AmazonCredentials>, AccountSecretArnProvider>(
+                Lifestyle.Singleton);
             // container.Register<ICredentialsProvider<AmazonCredentials>, SSMAmazonCredentialsProvider>(
             //     Lifestyle.Singleton);
             // container.Register<ICredentialCache<AmazonCredentials>, MemoizedCredentialCache<AmazonCredentials>>(

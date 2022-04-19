@@ -20,7 +20,15 @@ namespace ServerReportService
         {
             using (var executor = _factory.CreateConnection())
             {
-                var sql = "SELECT SecretArn as 'AccessArn', Source FROM AccountAccessItem INNER JOIN Account ON Account.Id = AccountAccessItem.AccountId WHERE Account.AccountId = @AccountId";
+                var sql = @"SELECT 
+                            SecretArn AS 'AccessArn',
+                            Source 
+                            FROM AccountAccessItem 
+                                INNER JOIN Account 
+                                ON Account.Id = AccountAccessItem.AccountId 
+                            WHERE Account.AccountId = @AccountId 
+                                AND IsEnabled = 1 
+                                AND Source = 'MCSIAMRole'";
 
                 return await executor.QueryAsync<AccountAccess>(sql, new { AccountId = accountId });
             }
