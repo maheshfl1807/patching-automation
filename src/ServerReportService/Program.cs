@@ -40,9 +40,7 @@
                 .WithConfigurationBinding<RootSettings>()
                 .WithConfigurationBinding<AccountAccessSettings>("AccountAccess")
                 .WithConfigurationBinding<KafkaSettings>("Kafka")
-                .WithConfigurationBinding<MysqlSettings>(MysqlSettings.Section)
                 .WithConfigurationBinding<PlatformSettings>("Platform")
-                .WithConfigurationBinding<InfraGuardSettings>("InfraGuard")
 
                 .WithErrorReturnCode(1)
 

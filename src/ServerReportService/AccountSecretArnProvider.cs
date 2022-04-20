@@ -6,6 +6,7 @@ namespace ServerReportService
     using Data;
     using LaunchSharp.AccountAccess;
     using LaunchSharp.AccountAccess.AmazonIAM;
+    using ServerReportService.Models;
 
     internal class AccountSecretArnProvider : IAccountSecretArnProvider<AmazonCredentials>
     {
@@ -20,7 +21,7 @@ namespace ServerReportService
         {
             using (var executor = _factory.CreateConnection())
             {
-                var sql = @"SELECT 
+                var results = await executor.QueryAsync<MCSAccountAccess>(@"SELECT 
                             SecretArn AS 'AccessArn',
                             Source 
                             FROM AccountAccessItem 
@@ -28,9 +29,9 @@ namespace ServerReportService
                                 ON Account.Id = AccountAccessItem.AccountId 
                             WHERE Account.AccountId = @AccountId 
                                 AND IsEnabled = 1 
-                                AND Source = 'MCSIAMRole'";
-
-                return await executor.QueryAsync<AccountAccess>(sql, new { AccountId = accountId });
+                                AND Source = 'MCSIAMRole'
+                            ", new { AccountId = accountId });
+                return (IEnumerable<AccountAccess>)results;
             }
         }
     }

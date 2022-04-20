@@ -223,10 +223,9 @@ namespace ServerReportService.Importers
                 if (cloudServer.IsRunning && cloudServer.ProfileId != null)
                 {
                     var regionEndpoint = RegionEndpoint.GetBySystemName(cloudServer.Region);
-                    var credentials =
-                        await _credentialHandler.GetAwsAccountCredentials(cloudAccount.CloudProviderAccountId,
-                            regionEndpoint);
-
+                    var credentialsResponse =
+                        await _credentialHandler.GetAccountCredentials(cloudAccount.CloudProviderAccountId);
+                    var credentials = credentialsResponse.credentials;
                     if (credentials != null)
                     {
                         try

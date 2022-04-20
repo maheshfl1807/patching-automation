@@ -24,22 +24,10 @@
             _logger = logger;
         }
 
-        public async Task<Credentials> GetAwsAccountCredentials(string accountId, RegionEndpoint region)
+        public async Task<(string arn, string externalId, Credentials credentials)> GetAccountCredentials(string accountId)
         {
-            Credentials customerCredentials = null;
             try
             {
-
-                var defaultClient = new AmazonSecurityTokenServiceClient();
-                var platformAutomationAssumeRequest = new AssumeRoleRequest
-                {
-                    RoleArn = $"arn:aws:iam::536269885160:role/2WPlatformAutomationAssumeRoleRole",
-                    RoleSessionName = "PatchingAutomation",
-                    ExternalId = "pzf3apb53cqaa27qx9f5mdad2hz63a3nm4th3eeqd6puqx5wpqscwg3w8dy8wy4m",
-                };
-                var platformAutomationAssumeResponse = await defaultClient.AssumeRoleAsync(platformAutomationAssumeRequest);
-                // This method currently assumes credentials are AWS-specific but long-term we'll want to either overload logic to handle all providers (AWS/Azure/GCP/etc) or provide logic to perform relevant lookup
-                // List<AccountAccess> accountAccessItems = await this._accountSecretArnProvider.GetAccountAccessArns(accountId)?.ToList() ?? new List<AccountAccess>();
                 var accountAccessItem = (await this._awsAccountSecretArnProvider.GetAccountAccessArns(accountId))?.FirstOrDefault();
 
                 if (accountAccessItem is null)
@@ -47,26 +35,53 @@
                     throw new ArgumentNullException($"No valid account access item was found for account '{accountId}'.");
                 }
 
+                // Below method currently assumes credentials are AWS-specific but long-term we'll want to either overload logic to handle all providers (AWS/Azure/GCP/etc) or provide logic to perform relevant lookup
                 var credentialsParseResults = this.ParseAwsRoleCredentials(accountAccessItem, accountId);
 
-                using var securityTokenClient = new AmazonSecurityTokenServiceClient(platformAutomationAssumeResponse.Credentials, region);
-                var customerAssumeRequest = new AssumeRoleRequest
-                {
-                    RoleArn = credentialsParseResults.arn,
-                    RoleSessionName = "PatchingAutomation",
-                    ExternalId = credentialsParseResults.externalId,
-                };
-                var customerAssumeReponse = await securityTokenClient.AssumeRoleAsync(customerAssumeRequest);
+                return (credentialsParseResults.arn, credentialsParseResults.externalId, await this.AssumeRole(credentialsParseResults.arn, credentialsParseResults.externalId).ConfigureAwait(false));
 
-                return customerAssumeReponse.Credentials;
             }
             catch (Exception e)
             {
                 _logger.LogError(
-                    $"An error occurred when assuming role for account {accountId}, region {region.DisplayName}: {e.Message}");
+                    $"An error occurred when assuming role for account {accountId}: {e.Message}");
+                return ("", "", null);
+            }
+        }
+
+        public async Task<Credentials> RefreshCredentialsIfNeeded(string arn, string externalId, Credentials credentials)
+        {
+            if (credentials.Expiration.ToUniversalTime() <= DateTime.UtcNow.AddMinutes(10))
+            {
+                credentials = await this.AssumeRole(arn, externalId).ConfigureAwait(false);
             }
 
-            return customerCredentials;
+            return credentials;
+        }
+
+        private async Task<Credentials> AssumeRole(string arn, string externalId)
+        {
+            var defaultClient = new AmazonSecurityTokenServiceClient();
+            // could be useful to pull below rolearn + externalId into app settings for more flexibility
+            var platformAutomationAssumeRequest = new AssumeRoleRequest
+            {
+                RoleArn = $"arn:aws:iam::536269885160:role/2WPlatformAutomationAssumeRoleRole",
+                RoleSessionName = "PatchingAutomation",
+                ExternalId = "pzf3apb53cqaa27qx9f5mdad2hz63a3nm4th3eeqd6puqx5wpqscwg3w8dy8wy4m",
+            };
+            var platformAutomationAssumeResponse = await defaultClient.AssumeRoleAsync(platformAutomationAssumeRequest);
+
+            using var securityTokenClient = new AmazonSecurityTokenServiceClient(platformAutomationAssumeResponse.Credentials);
+            var customerAssumeRequest = new AssumeRoleRequest
+            {
+                RoleArn = arn,
+                RoleSessionName = "PatchingAutomation",
+                DurationSeconds = 3600,
+                ExternalId = externalId,
+            };
+            var customerAssumeReponse = await securityTokenClient.AssumeRoleAsync(customerAssumeRequest);
+
+            return customerAssumeReponse.Credentials;
         }
 
         private (string arn, string externalId) ParseAwsRoleCredentials(AccountAccess accessItem, string accountId)

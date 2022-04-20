@@ -93,12 +93,14 @@ namespace ServerReportService.Exporters
                 && !region.SystemName.StartsWith("us-gov")
                 && !region.SystemName.StartsWith("af")
                 && !invalidRegions.Contains(region.SystemName));
-            foreach (var regionEndpoint in validRegions)
-            {
-                var credentials = await _credentialHandler.GetAwsAccountCredentials(account.CloudProviderAccountId, regionEndpoint);
+            var getCredentialsResponse = await this._credentialHandler.GetAccountCredentials(account.CloudProviderAccountId);
+            var credentials = getCredentialsResponse.credentials;
 
-                if (credentials != null)
+            if (credentials != null)
+            {
+                foreach (var regionEndpoint in validRegions)
                 {
+                    credentials = await this._credentialHandler.RefreshCredentialsIfNeeded(getCredentialsResponse.arn, getCredentialsResponse.externalId, credentials);
                     using var ec2Client = new AmazonEC2Client(
                         credentials,
                         regionEndpoint);
@@ -114,10 +116,10 @@ namespace ServerReportService.Exporters
                     var cloudServerList = await ConvertResponseToCloudServersAsync(awsDescribeInstancesResponse, account, regionEndpoint);
                     cloudServers.AddRange(cloudServerList);
                 }
-                else
-                {
-                    accountsWithCredentialIssues[account.CloudProviderAccountId] = true;
-                }
+            }
+            else
+            {
+                accountsWithCredentialIssues[account.CloudProviderAccountId] = true;
             }
 
             return cloudServers;
