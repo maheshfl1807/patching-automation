@@ -8,9 +8,9 @@
 
     public class ServerReportServiceContextFactory : IDbContextFactory<ServerReportServiceContext>
     {
-        private ISettings<MysqlSettings> _mysqlSettings;
+        private ISettings<PlatformSettings> _mysqlSettings;
 
-        public ServerReportServiceContextFactory(ISettings<MysqlSettings> mysqlSettings)
+        public ServerReportServiceContextFactory(ISettings<PlatformSettings> mysqlSettings)
         {
             _mysqlSettings = mysqlSettings;
         }
@@ -26,7 +26,7 @@
         }
 
         /// <inheritdoc />
-        public Task<ServerReportServiceContext> CreateDbContextAsync(CancellationToken cancellationToken = new ())
+        public Task<ServerReportServiceContext> CreateDbContextAsync(CancellationToken cancellationToken = new())
             => Task.FromResult(CreateDbContext());
     }
 }

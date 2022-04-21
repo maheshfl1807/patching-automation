@@ -7,7 +7,6 @@ namespace ServerReportService
     using Data;
     using Exporters;
     using Importers;
-    using Importers.InfraGuard;
     using ServerReportService.Producers;
     using LaunchSharp;
     using LaunchSharp.AccountAccess;
@@ -31,8 +30,7 @@ namespace ServerReportService
         public void RegisterServices(Container container)
         {
             container.Register<Application>();
-            // container.Register<PlatformConnectionFactory>(Lifestyle.Singleton);
-            // container.Register<InfraGuardApi>(Lifestyle.Singleton);
+            container.Register<PlatformConnectionFactory>(Lifestyle.Singleton);
             container.Register<CredentialHandler>(Lifestyle.Singleton);
             container.Register<ServerReportCommandProducer>(Lifestyle.Singleton);
 
@@ -50,7 +48,6 @@ namespace ServerReportService
 
             // Producers
             // // TODO: Delete IPlatformProducer producers as we add them into creation processes in Platform API.
-            // container.Collection.Append<IPlatformProducer, AccountProducer>(Lifestyle.Singleton);
             // container.Collection.Append<IPlatformProducer, ProviderProducer>(Lifestyle.Singleton);
             //
             // // Consumers
@@ -62,22 +59,11 @@ namespace ServerReportService
             container.Collection.Append<IExporter, AwsExporter>(Lifestyle.Singleton);
 
             // Importers
-            // container.Collection.Append<IImporter, InfraGuardImporter>(Lifestyle.Singleton);
             container.Collection.Append<IImporter, ServerReportImporter>(Lifestyle.Singleton);
 
             // Amazon Security
-            // container.Register<IAccountSecretArnProvider<AmazonCredentials>, AccountSecretArnProvider>(
-            //     Lifestyle.Singleton);
-            // container.Register<ICredentialsProvider<AmazonCredentials>, SSMAmazonCredentialsProvider>(
-            //     Lifestyle.Singleton);
-            // container.Register<ICredentialCache<AmazonCredentials>, MemoizedCredentialCache<AmazonCredentials>>(
-            //     Lifestyle.Singleton);
-            // container.Register<IAmazonSecurityTokenServiceFactory, AmazonSecurityTokenServiceFactory>(
-            //     Lifestyle.Singleton);
-            // container.Register<IAmazonSimpleSystemsManagementFactory, AmazonSimpleSystemsManagementFactory>(
-            //     Lifestyle.Singleton);
-            // container.Register<IRoleAssumer, IAMRoleAssumer>(Lifestyle.Singleton);
-            // container.Register<ISTSResponseHandler, STSResponseHandler>(Lifestyle.Singleton);
+            container.Register<IAccountSecretArnProvider<AmazonCredentials>, AccountSecretArnProvider>(
+                Lifestyle.Singleton);
 
             // Import Service Context
             container.Register<IDbContextFactory<ServerReportServiceContext>, ServerReportServiceContextFactory>(

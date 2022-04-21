@@ -12,8 +12,6 @@
         /// </summary>
         public string ServiceName { get; set; }
 
-        public Dictionary<string, string> AccountToExternalIdMap { get; set; }
-
         public IEnumerable<string> ValidPatchTagKeys { get; set; }
 
         public IEnumerable<string> InvalidPatchTagValues { get; set; }
