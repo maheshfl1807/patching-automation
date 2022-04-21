@@ -1,5 +1,6 @@
 namespace ServerReportService.Producers
 {
+    using System;
     using System.Threading.Tasks;
     using Confluent.Kafka;
     using LaunchSharp.Settings;
@@ -18,11 +19,13 @@ namespace ServerReportService.Producers
             ILogger logger)
             : base(kafkaSettings)
         {
-            _logger = logger;
-            var serverReportCommandMessage = rootSettings.Get(s => s.ServerReportCommandMessage);
-            _serverReportCommandMessage = string.IsNullOrEmpty(serverReportCommandMessage)
-                ? credentialHandler.GetCommandMessage()
-                : serverReportCommandMessage;
+            this._logger = logger;
+            var serverReportCommandMessage = rootSettings.GetRequired(s => s.ServerReportCommandMessage);
+            if (string.IsNullOrEmpty(serverReportCommandMessage)) // GetRequired should throw if null, also check for empty string
+            {
+                throw new ArgumentNullException("Missing input command, no 'ServerReportCommandMessage' was provided");
+            }
+            this._serverReportCommandMessage = serverReportCommandMessage;
         }
 
         public override async Task Produce()

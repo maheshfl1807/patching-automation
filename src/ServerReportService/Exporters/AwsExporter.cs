@@ -19,7 +19,7 @@ namespace ServerReportService.Exporters
     {
         private const string c_providerName = "AWS";
 
-        private static readonly List<InstanceStateName> s_invalidStates = new ()
+        private static readonly List<InstanceStateName> s_invalidStates = new()
         {
             InstanceStateName.ShuttingDown,
             InstanceStateName.Terminated,
@@ -93,31 +93,40 @@ namespace ServerReportService.Exporters
                 && !region.SystemName.StartsWith("us-gov")
                 && !region.SystemName.StartsWith("af")
                 && !invalidRegions.Contains(region.SystemName));
-            foreach (var regionEndpoint in validRegions)
+            var getCredentialsResponse = await this._credentialHandler.GetAccountCredentials(account.CloudProviderAccountId);
+            var credentials = getCredentialsResponse.credentials;
+
+            if (credentials != null)
             {
-                var credentials = await _credentialHandler.GetAccountCredentials(account.CloudProviderAccountId, regionEndpoint);
-
-                if (credentials != null)
+                foreach (var regionEndpoint in validRegions)
                 {
-                    using var ec2Client = new AmazonEC2Client(
-                        credentials,
-                        regionEndpoint);
-
-                    var awsDescribeInstancesRequest = new DescribeInstancesRequest();
-                    if (serverIdsFilter != null)
+                    credentials = await this._credentialHandler.RefreshCredentialsIfNeeded(getCredentialsResponse.arn, getCredentialsResponse.externalId, credentials);
+                    if (credentials != null)
                     {
-                        awsDescribeInstancesRequest.InstanceIds = serverIdsFilter.ToList();
+                        using var ec2Client = new AmazonEC2Client(
+                            credentials,
+                            regionEndpoint);
+
+                        var awsDescribeInstancesRequest = new DescribeInstancesRequest();
+                        if (serverIdsFilter != null)
+                        {
+                            awsDescribeInstancesRequest.InstanceIds = serverIdsFilter.ToList();
+                        }
+
+                        var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync(awsDescribeInstancesRequest);
+
+                        var cloudServerList = await ConvertResponseToCloudServersAsync(awsDescribeInstancesResponse, account, regionEndpoint);
+                        cloudServers.AddRange(cloudServerList);
                     }
-
-                    var awsDescribeInstancesResponse = await ec2Client.DescribeInstancesAsync(awsDescribeInstancesRequest);
-
-                    var cloudServerList = await ConvertResponseToCloudServersAsync(awsDescribeInstancesResponse, account, regionEndpoint);
-                    cloudServers.AddRange(cloudServerList);
+                    else
+                    {
+                        accountsWithCredentialIssues[account.CloudProviderAccountId] = true;
+                    }
                 }
-                else
-                {
-                    accountsWithCredentialIssues[account.CloudProviderAccountId] = true;
-                }
+            }
+            else
+            {
+                accountsWithCredentialIssues[account.CloudProviderAccountId] = true;
             }
 
             return cloudServers;

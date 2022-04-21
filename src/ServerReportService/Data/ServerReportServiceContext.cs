@@ -61,7 +61,7 @@
                     .AddJsonFile("appsettings.json", true)
                     .AddJsonFile("appsettings.local.json", true)
                     .Build()
-                    .GetSection(MysqlSettings.Section)[nameof(MysqlSettings.ConnectionString)];
+                    .GetSection(PlatformSettings.Section)[nameof(PlatformSettings.ConnectionString)];
 
                 optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
             }
