@@ -42,7 +42,7 @@ namespace ServerReportService
         /// <summary>
         /// Determines whether the service runs in producer or consumer mode.
         /// </summary>
-        private readonly bool _isProducer;
+        private readonly string _serverReportCommandMessage;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
@@ -63,7 +63,7 @@ namespace ServerReportService
             _kafkaAdminClient = kafkaAdminClientBuilder.Build();
             _consumers = consumers;
             _serverReportCommandProducer = serverReportCommandProducer;
-            _isProducer = rootSettings.Get(s => s.IsProducer);
+            _serverReportCommandMessage = rootSettings.Get(s => s.ServerReportCommandMessage);
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace ServerReportService
                 }
             }
 
-            if (_isProducer)
+            if (string.IsNullOrEmpty(this._serverReportCommandMessage) == false)
             {
                 // Produce kickoff message
                 await _serverReportCommandProducer.Produce();

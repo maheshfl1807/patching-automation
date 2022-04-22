@@ -16,8 +16,6 @@
 
         public IEnumerable<string> InvalidPatchTagValues { get; set; }
 
-        public bool IsProducer { get; set; }
-
         public string S3AccessPoint { get; set; }
 
         public string S3ReportKey { get; set; }
