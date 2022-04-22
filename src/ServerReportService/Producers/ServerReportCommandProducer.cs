@@ -20,25 +20,24 @@ namespace ServerReportService.Producers
             : base(kafkaSettings)
         {
             this._logger = logger;
-            var serverReportCommandMessage = rootSettings.GetRequired(s => s.ServerReportCommandMessage);
-            if (string.IsNullOrEmpty(serverReportCommandMessage)) // GetRequired should throw if null, also check for empty string
-            {
-                throw new ArgumentNullException("Missing input command, no 'ServerReportCommandMessage' was provided");
-            }
+            var serverReportCommandMessage = rootSettings.Get(s => s.ServerReportCommandMessage);
             this._serverReportCommandMessage = serverReportCommandMessage;
         }
 
         public override async Task Produce()
         {
             var topic = Topics.PublicServerReportServiceCommandsServerReportV1;
-            var message = _serverReportCommandMessage;
-            _logger.LogInformation(
-                "Submitting the following message to Kafka topic {Topic}:\n{Message}", topic, message);
+            if (string.IsNullOrEmpty(this._serverReportCommandMessage))
+            {
+                throw new ArgumentNullException("Missing input command, no 'ServerReportCommandMessage' was provided");
+            }
+            this._logger.LogInformation(
+                "Submitting the following message to Kafka topic {Topic}:\n{Message}", topic, this._serverReportCommandMessage);
 
             using var producer = GetProducer();
-            await producer.ProduceAsync(topic, new Message<Null, string>
+            await producer.ProduceAsync(this._serverReportCommandMessage, new Message<Null, string>
             {
-                Value = message,
+                Value = this._serverReportCommandMessage,
             });
         }
     }
