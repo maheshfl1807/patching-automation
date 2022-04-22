@@ -9,9 +9,6 @@ namespace ServerReportService.Exporters
     using Amazon.EC2.Model;
     using Data;
     using Entities;
-    using LaunchSharp.AccountAccess;
-    using LaunchSharp.AccountAccess.AmazonIAM;
-    using LaunchSharp.Settings;
     using Microsoft.EntityFrameworkCore;
     using Tag = Amazon.EC2.Model.Tag;
 
