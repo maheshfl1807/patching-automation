@@ -35,7 +35,7 @@ namespace ServerReportService.Producers
                 "Submitting the following message to Kafka topic {Topic}:\n{Message}", topic, this._serverReportCommandMessage);
 
             using var producer = GetProducer();
-            await producer.ProduceAsync(this._serverReportCommandMessage, new Message<Null, string>
+            await producer.ProduceAsync(topic, new Message<Null, string>
             {
                 Value = this._serverReportCommandMessage,
             });
