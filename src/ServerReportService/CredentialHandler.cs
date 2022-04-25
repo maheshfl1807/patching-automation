@@ -44,7 +44,7 @@
             catch (Exception e)
             {
                 _logger.LogError(
-                    $"An error occurred when assuming role for account {accountId}: {e.Message}");
+                    $"An error occurred when assuming role for account {accountId}: {e.Message}, {e.InnerException}, {e.StackTrace}.");
                 return ("", "", null);
             }
         }
