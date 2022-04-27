@@ -102,9 +102,6 @@ resource "aws_s3_access_point" "report_access_point" {
   provider = aws
   bucket   = module.report_bucket.main_bucket_name
   name     = local.vpc_access_point_name
-  vpc_configuration {
-    vpc_id = var.vpc_id
-  }
   policy = <<EOF
 {
   "Version": "2012-10-17",
