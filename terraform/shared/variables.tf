@@ -25,3 +25,15 @@ variable "msk_cluster_name" {
 variable "msk_cluster_id" {
   description = "Identifier of the MSK cluster."
 }
+
+variable "tags_as_map" {
+  description = "General tags to add to resources."
+  type        = map(string)
+  default     = {}
+}
+
+variable "mcs_tags_as_map" {
+  description = "MCS-specific tags to add to resources."
+  type        = map(string)
+  default     = {}
+}
