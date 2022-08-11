@@ -24,15 +24,23 @@ provider "aws" {
 }
 
 locals {
-  env = "prod-eng"
-  aws_provider_region = "us-west-2"
-  aws_provider_profile = "default"
-  eks_oidc_provider_arn = "arn:aws:iam::061165946885:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/22143DBD43E60E45091475AE1D4C0160"
+  env                    = "prod-eng"
+  aws_provider_region    = "us-west-2"
+  aws_provider_profile   = "default"
+  eks_oidc_provider_arn  = "arn:aws:iam::061165946885:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/22143DBD43E60E45091475AE1D4C0160"
   eks2_oidc_provider_arn = "arn:aws:iam::061165946885:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/4061E2E752BD003CFA7095AE9C92C60C"
-  vpc_id = data.terraform_remote_state.prod.outputs.module_vpc_vpc_id
-  main_region = "us-west-2"
-  msk_cluster_name = "prod-eng-msk-cluster"
-  msk_cluster_id = "53316403-5367-41e9-b694-3d4648849a1e-8"
+  vpc_id                 = data.terraform_remote_state.prod.outputs.module_vpc_vpc_id
+  main_region            = "us-west-2"
+  msk_cluster_name       = "prod-eng-msk-cluster"
+  msk_cluster_id         = "53316403-5367-41e9-b694-3d4648849a1e-8"
+  tags_as_map = {
+    Owner      = "DataPlatform"
+    Stage      = "production"
+    Repository = "https://gitlab.com/2ndwatch/applications/patching-automation/-/blob/main/terraform/prod"
+  }
+  mcs_tags_as_map = {
+    "2W_Environment" = "production"
+  }
 }
 
 module "shared" {
@@ -40,11 +48,13 @@ module "shared" {
   providers = {
     aws = aws
   }
-  env = local.env
-  eks_oidc_provider_arn = local.eks_oidc_provider_arn
+  env                    = local.env
+  eks_oidc_provider_arn  = local.eks_oidc_provider_arn
   eks2_oidc_provider_arn = local.eks2_oidc_provider_arn
-  vpc_id = local.vpc_id
-  main_region = local.main_region
-  msk_cluster_name = local.msk_cluster_name
-  msk_cluster_id = local.msk_cluster_id
+  vpc_id                 = local.vpc_id
+  main_region            = local.main_region
+  msk_cluster_name       = local.msk_cluster_name
+  msk_cluster_id         = local.msk_cluster_id
+  tags_as_map            = local.tags_as_map
+  mcs_tags_as_map        = local.mcs_tags_as_map
 }

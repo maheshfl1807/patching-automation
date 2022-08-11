@@ -7,7 +7,7 @@ locals {
 }
 
 module "report_bucket" {
-  source = "github.com/2ndWatch/pe-terraform-aws-s3.git?ref=v6.4.1"
+  source = "github.com/2ndWatch/pe-terraform-aws-s3.git?ref=v6.5.1"
 
   providers = {
     aws.main    = aws
@@ -18,6 +18,7 @@ module "report_bucket" {
   enable_kms                            = true
   unique_bucket_name                    = "${var.env}-server-report-service-reports"
   create_main_accesspoint_bucket_policy = true
+  tags                                  = merge(var.tags_as_map, var.mcs_tags_as_map, { "2W_Workload" = "server_reports" })
 
   main_lifecycle_rules = [
     {
@@ -35,7 +36,7 @@ module "report_bucket" {
 }
 
 module "service_role" {
-  source = "github.com/2ndWatch/pe-terraform-aws-iam.git?ref=v8.0.0"
+  source = "github.com/2ndWatch/pe-terraform-aws-iam.git?ref=v8.1.0"
   providers = {
     aws = aws
   }
@@ -49,6 +50,7 @@ module "service_role" {
       action          = "sts:AssumeRoleWithWebIdentity"
     }
   ]
+  tags                         = merge(var.tags_as_map, var.mcs_tags_as_map, { "2W_Workload" = "server_reports" })
   role_inline_policy_statement = <<EOF
 {
     "Version": "2012-10-17",
@@ -102,7 +104,7 @@ resource "aws_s3_access_point" "report_access_point" {
   provider = aws
   bucket   = module.report_bucket.main_bucket_name
   name     = local.vpc_access_point_name
-  policy = <<EOF
+  policy   = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
