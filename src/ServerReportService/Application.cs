@@ -45,6 +45,11 @@ namespace ServerReportService
         private readonly string _serverReportCommandMessage;
 
         /// <summary>
+        /// The replication factor to apply to topics when created.
+        /// </summary>
+        private readonly short _topicReplicationFactor;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         /// <param name="logger">Logger.</param>
@@ -52,18 +57,21 @@ namespace ServerReportService
         /// <param name="consumers">List of consumers to run.</param>
         /// <param name="serverReportCommandProducer">Temporary producer for kickoff message.</param>
         /// <param name="rootSettings">Root settings of the service.</param>
+        /// <param name="kafkaSettings">Kafka settings of the service.</param>
         public Application(
             ILogger logger,
             AdminClientBuilder kafkaAdminClientBuilder,
             IEnumerable<IConsumer> consumers,
             ServerReportCommandProducer serverReportCommandProducer,
-            ISettings<RootSettings> rootSettings)
+            ISettings<RootSettings> rootSettings,
+            ISettings<KafkaSettings> kafkaSettings)
         {
             _logger = logger;
             _kafkaAdminClient = kafkaAdminClientBuilder.Build();
             _consumers = consumers;
             _serverReportCommandProducer = serverReportCommandProducer;
             _serverReportCommandMessage = rootSettings.Get(s => s.ServerReportCommandMessage);
+            _topicReplicationFactor = kafkaSettings.Get(s => s.TopicReplicationFactor, (short)2);
         }
 
         /// <summary>
@@ -84,6 +92,7 @@ namespace ServerReportService
                 topicSpecifications.Add(new TopicSpecification
                 {
                     Name = topicName,
+                    ReplicationFactor = _topicReplicationFactor
                 });
             }
 

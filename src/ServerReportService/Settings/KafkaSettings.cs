@@ -23,6 +23,8 @@
         /// </summary>
         public string ServiceDomain { get; set; }
 
+        public short TopicReplicationFactor { get; set; }
+
         public string AccountConsumerGroupId { get; set; }
 
         public int AccountConsumerCount { get; set; }
