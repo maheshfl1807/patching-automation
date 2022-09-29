@@ -77,68 +77,7 @@ namespace ServerReportService.Consumers.Commands
                 try
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
-                    var importCommandMessage = JsonConvert.DeserializeObject<ServerReportCommandMessage>(consumeResult.Message.Value);
-                    var accountsWithCredentialIssues = new ConcurrentDictionary<string, bool>();
-                    var serverReports = new ConcurrentBag<ServerReport>();
-
-                    _logger.LogInformation("Server Report Command found. Consuming now...");
-
-                    if (importCommandMessage != null)
-                    {
-                        await _exporters.ParallelForEachAsync(
-                            async exporter =>
-                            {
-                                var exporterProvider = await exporter.GetCloudProvider();
-                                if (importCommandMessage.ProviderNames == null ||
-                                    importCommandMessage.ProviderNames.Contains(exporterProvider.Name))
-                                {
-                                    var cloudAccounts =
-                                        await exporter.GetCloudAccounts(importCommandMessage.AccountIds);
-
-                                    await cloudAccounts.ParallelForEachAsync(
-                                        async cloudAccount =>
-                                        {
-                                            _logger.LogInformation(
-                                                "Running importers for {exporterProvider.Name} account {cloudAccount.CloudProviderAccountId}",
-                                                exporterProvider.Name,
-                                                cloudAccount.CloudProviderAccountId);
-
-                                            var cloudServers = await exporter.GetCloudServers(cloudAccount,
-                                                importCommandMessage.ServerIds, accountsWithCredentialIssues);
-
-                                            if (!cloudServers.IsEmpty())
-                                            {
-                                                await _importers.ParallelForEachAsync(
-                                                    async importer => await importer.Import(
-                                                        cloudServers,
-                                                        cloudAccount,
-                                                        exporterProvider,
-                                                        serverReports,
-                                                        accountsWithCredentialIssues),
-                                                    cancellationToken);
-                                            }
-                                        },
-                                        cancellationToken);
-                                }
-                            },
-                            cancellationToken);
-                    }
-
-                    var sortedServerReports = serverReports.OrderBy(serverReport => serverReport.AccountId);
-
-                    // Write out compressed CSV of server reports to memory stream.
-                    await using var s3Stream = new MemoryStream();
-                    await WriteCompressedCsvToMemoryStreamAsync<ServerReport, ServerReportMap>(s3Stream, sortedServerReports);
-
-                    // Upload stream to S3.
-                    var reportKey = string.Format(_s3ReportKey, $"{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}");
-                    await WriteMemoryStreamToS3(s3Stream, reportKey);
-
-                    // Send downloadable report URL to SNS topic.
-                    var urlToReport = GetS3PreSignedUrl(reportKey);
-                    await SendReportToSns(serverReports, accountsWithCredentialIssues, urlToReport);
-
-                    _logger.LogInformation("Completed Consumption of Server Report Command");
+                    await ProcessCommandMessage(consumeResult.Message.Value, cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -147,6 +86,77 @@ namespace ServerReportService.Consumers.Commands
             }
 
             consumer.Close();
+        }
+
+        public async Task ProcessCommandMessage(string consumeResultValue, CancellationToken cancellationToken)
+        {
+            var importCommandMessage = JsonConvert.DeserializeObject<ServerReportCommandMessage>(consumeResultValue);
+            if (importCommandMessage != null)
+            {
+                var accountsWithCredentialIssues = new ConcurrentDictionary<string, bool>();
+                var serverReports = new ConcurrentBag<ServerReport>();
+
+                _logger.LogInformation("Server Report Command found. Consuming now...");
+
+                await _exporters.ParallelForEachAsync(
+                    async exporter =>
+                    {
+                        var exporterProvider = await exporter.GetCloudProvider();
+                        if (importCommandMessage.ProviderNames == null ||
+                            importCommandMessage.ProviderNames.Contains(exporterProvider.Name))
+                        {
+                            var cloudAccounts =
+                                await exporter.GetCloudAccounts(importCommandMessage.AccountIds);
+
+                            await cloudAccounts.ParallelForEachAsync(
+                                async cloudAccount =>
+                                {
+                                    _logger.LogInformation(
+                                        "Running importers for {exporterProvider.Name} account {cloudAccount.CloudProviderAccountId}",
+                                        exporterProvider.Name,
+                                        cloudAccount.CloudProviderAccountId);
+
+                                    var cloudServers = await exporter.GetCloudServers(cloudAccount,
+                                        importCommandMessage.ServerIds, accountsWithCredentialIssues);
+
+                                    if (!cloudServers.IsEmpty())
+                                    {
+                                        await _importers.ParallelForEachAsync(
+                                            async importer => await importer.Import(
+                                                cloudServers,
+                                                cloudAccount,
+                                                exporterProvider,
+                                                serverReports,
+                                                accountsWithCredentialIssues),
+                                            cancellationToken);
+                                    }
+                                },
+                                cancellationToken);
+                        }
+                    },
+                    cancellationToken);
+
+                var sortedServerReports = serverReports.OrderBy(serverReport => serverReport.AccountId);
+
+                // Write out compressed CSV of server reports to memory stream.
+                await using var s3Stream = new MemoryStream();
+                await WriteCompressedCsvToMemoryStreamAsync<ServerReport, ServerReportMap>(s3Stream,
+                    sortedServerReports);
+
+                // Upload stream to S3.
+                var reportKey = string.Format(_s3ReportKey, $"{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}");
+                await WriteMemoryStreamToS3(s3Stream, reportKey);
+
+                // Send downloadable report URL to SNS topic.
+                var urlToReport = GetS3PreSignedUrl(reportKey);
+                await SendReportToSns(serverReports, accountsWithCredentialIssues, urlToReport);
+
+                _logger.LogInformation("Completed Consumption of Server Report Command");
+            }
+            else
+            {
+                _logger.LogError("Command message could not be processed because it was empty.");
+            }
         }
 
         private async Task WriteCompressedCsvToMemoryStreamAsync<TCsvRow, TCsvRowMap>(
