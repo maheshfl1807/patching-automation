@@ -32,6 +32,7 @@ namespace ServerReportService
             container.Register<Application>();
             container.Register<PlatformConnectionFactory>(Lifestyle.Singleton);
             container.Register<CredentialHandler>(Lifestyle.Singleton);
+            container.Register<ServerReportCommandConsumer>(Lifestyle.Singleton);
             container.Register<ServerReportCommandProducer>(Lifestyle.Singleton);
 
             // Kafka
